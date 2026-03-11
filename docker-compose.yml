@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: survey_pulse_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: survey_pulse
+      POSTGRES_PASSWORD: survey_pulse
+      POSTGRES_DB: survey_pulse_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U survey_pulse"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8-alpine
+    container_name: survey_pulse_clickhouse
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: survey_pulse
+      CLICKHOUSE_USER: survey_pulse
+      CLICKHOUSE_PASSWORD: survey_pulse
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "8123:8123"
+    volumes:
+      - ch_data:/var/lib/clickhouse
+      - ./priv/clickhouse/init:/docker-entrypoint-initdb.d
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pg_data:
+  ch_data:
