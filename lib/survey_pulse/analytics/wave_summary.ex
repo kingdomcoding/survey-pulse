@@ -1,4 +1,5 @@
 defmodule SurveyPulse.Analytics.WaveSummary do
+  @moduledoc false
   use Ash.Resource,
     domain: SurveyPulse.Analytics,
     data_layer: Ash.DataLayer.Simple

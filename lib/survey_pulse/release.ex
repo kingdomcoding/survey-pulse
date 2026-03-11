@@ -1,4 +1,5 @@
 defmodule SurveyPulse.Release do
+  @moduledoc false
   @app :survey_pulse
 
   def migrate do

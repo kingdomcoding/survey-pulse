@@ -1,5 +1,9 @@
 defmodule SurveyPulse.Analytics.ManualReads.ReadWaveSummary do
+  @moduledoc false
   use Ash.Resource.ManualRead
+
+  alias Ash.Error.Query.InvalidQuery
+  alias SurveyPulse.Analytics.WaveSummary
 
   @impl true
   def read(query, _data_layer_query, _opts, _context) do
@@ -24,22 +28,20 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadWaveSummary do
 
     case SurveyPulse.ClickRepo.query(sql, params) do
       {:ok, %{rows: rows, columns: columns}} ->
-        results =
-          Enum.map(rows, fn row ->
-            map =
-              columns
-              |> Enum.zip(row)
-              |> Map.new(fn {col, val} -> {String.to_existing_atom(col), val} end)
-
-            struct!(SurveyPulse.Analytics.WaveSummary, map)
-          end)
-
-        {:ok, results}
+        {:ok, Enum.map(rows, &row_to_struct(columns, &1))}
 
       {:error, reason} ->
-        {:error,
-         Ash.Error.Query.InvalidQuery.exception(message: "ClickHouse error: #{inspect(reason)}")}
+        {:error, InvalidQuery.exception(message: "ClickHouse error: #{inspect(reason)}")}
     end
+  end
+
+  defp row_to_struct(columns, row) do
+    map =
+      columns
+      |> Enum.zip(row)
+      |> Map.new(fn {col, val} -> {String.to_existing_atom(col), val} end)
+
+    struct!(WaveSummary, map)
   end
 
   defp build_filters(survey_id, filters) do

@@ -1,4 +1,5 @@
 defmodule SurveyPulse.Seeds do
+  @moduledoc false
   require Logger
 
   @surveys [
@@ -139,7 +140,7 @@ defmodule SurveyPulse.Seeds do
   def run do
     existing = SurveyPulse.Surveys.list_surveys!()
 
-    if length(existing) > 0 do
+    if existing != [] do
       Logger.info("Surveys already exist, skipping seed.")
       :ok
     else
@@ -224,7 +225,7 @@ defmodule SurveyPulse.Seeds do
 
       score = raw |> round() |> max(question.scale_min) |> min(question.scale_max)
 
-      responded_at = DateTime.add(wave_start, :rand.uniform(14 * 86400), :second)
+      responded_at = DateTime.add(wave_start, :rand.uniform(14 * 86_400), :second)
 
       %{
         survey_id: survey_id,
@@ -248,25 +249,19 @@ defmodule SurveyPulse.Seeds do
   end
 
   defp demographic_bias(age_group, region) do
-    age_adj =
-      case age_group do
-        "18-24" -> 0.2
-        "25-34" -> 0.1
-        "55-64" -> -0.1
-        "65+" -> -0.2
-        _ -> 0.0
-      end
-
-    region_adj =
-      case region do
-        "north_america" -> 0.1
-        "asia_pacific" -> 0.15
-        "latin_america" -> -0.05
-        _ -> 0.0
-      end
-
-    age_adj + region_adj
+    age_adjustment(age_group) + region_adjustment(region)
   end
+
+  defp age_adjustment("18-24"), do: 0.2
+  defp age_adjustment("25-34"), do: 0.1
+  defp age_adjustment("55-64"), do: -0.1
+  defp age_adjustment("65+"), do: -0.2
+  defp age_adjustment(_), do: 0.0
+
+  defp region_adjustment("north_america"), do: 0.1
+  defp region_adjustment("asia_pacific"), do: 0.15
+  defp region_adjustment("latin_america"), do: -0.05
+  defp region_adjustment(_), do: 0.0
 
   defp format_wave_label(datetime) do
     month = datetime |> DateTime.to_date() |> Date.beginning_of_month()

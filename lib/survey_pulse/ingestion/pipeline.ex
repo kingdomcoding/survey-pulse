@@ -1,4 +1,5 @@
 defmodule SurveyPulse.Ingestion.Pipeline do
+  @moduledoc false
   use Broadway
 
   alias SurveyPulse.Ingestion.ResponseProcessor

@@ -1,4 +1,5 @@
 defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
+  @moduledoc false
   use Ash.Resource.ManualRead
 
   @impl true
@@ -21,10 +22,7 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
     """
 
     with {:ok, %{rows: rows, columns: columns}} <- SurveyPulse.ClickRepo.query(sql, params) do
-      raw_data =
-        Enum.map(rows, fn row ->
-          columns |> Enum.zip(row) |> Map.new(fn {c, v} -> {String.to_existing_atom(c), v} end)
-        end)
+      raw_data = Enum.map(rows, &row_to_map(columns, &1))
 
       wave_ids = Enum.map(raw_data, & &1.wave_id)
       waves = load_wave_metadata(wave_ids)
@@ -38,6 +36,10 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
 
       {:ok, results}
     end
+  end
+
+  defp row_to_map(columns, row) do
+    columns |> Enum.zip(row) |> Map.new(fn {c, v} -> {String.to_existing_atom(c), v} end)
   end
 
   defp load_wave_metadata([]), do: %{}

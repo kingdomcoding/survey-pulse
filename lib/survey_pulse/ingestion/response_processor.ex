@@ -1,4 +1,5 @@
 defmodule SurveyPulse.Ingestion.ResponseProcessor do
+  @moduledoc false
   @valid_age_groups ~w(18-24 25-34 35-44 45-54 55-64 65+)
   @valid_genders ~w(male female non_binary prefer_not_to_say)
   @valid_regions ~w(north_america europe asia_pacific latin_america africa middle_east)

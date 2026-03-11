@@ -1,4 +1,5 @@
 defmodule SurveyPulse.Surveys.Question do
+  @moduledoc false
   use Ash.Resource,
     domain: SurveyPulse.Surveys,
     data_layer: AshPostgres.DataLayer
