@@ -14,6 +14,9 @@ config :survey_pulse, SurveyPulse.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 
+config :survey_pulse, SurveyPulse.ClickRepo,
+  url: "http://survey_pulse:survey_pulse@localhost:8123/survey_pulse"
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :survey_pulse, SurveyPulseWeb.Endpoint,
