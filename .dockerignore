@@ -1,0 +1,12 @@
+_build/
+deps/
+node_modules/
+.git/
+.elixir_ls/
+.vscode/
+tmp/
+*.md
+.formatter.exs
+.gitignore
+docker-compose.yml
+Dockerfile

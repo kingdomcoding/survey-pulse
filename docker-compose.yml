@@ -41,6 +41,24 @@ services:
       timeout: 3s
       retries: 5
 
+  app:
+    build: .
+    container_name: survey_pulse_app
+    restart: unless-stopped
+    ports:
+      - "4600:4600"
+    environment:
+      DATABASE_URL: "ecto://survey_pulse:survey_pulse@postgres:5432/survey_pulse_dev"
+      CLICKHOUSE_URL: "http://survey_pulse:survey_pulse@clickhouse:8123/survey_pulse"
+      PHX_HOST: localhost
+      PORT: "4600"
+      SECRET_KEY_BASE: "RhwdtKMHxEGME9QM7Z1Fqf6e4QZsNjq0L5V7MgK3yKbGt4uPAz1rQEsQfMN8J+x"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+
 volumes:
   pg_data:
   ch_data:

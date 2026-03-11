@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+
+cd -P -- "$(dirname -- "$0")"/..
+
+./bin/survey_pulse eval "SurveyPulse.Release.migrate()"
+./bin/survey_pulse eval "SurveyPulse.Release.seed()"
+exec ./bin/survey_pulse start
