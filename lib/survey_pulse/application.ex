@@ -13,6 +13,7 @@ defmodule SurveyPulse.Application do
       SurveyPulse.ClickRepo,
       {DNSCluster, query: Application.get_env(:survey_pulse, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: SurveyPulse.PubSub},
+      SurveyPulse.Ingestion.Pipeline,
       SurveyPulseWeb.Endpoint
     ]
 
