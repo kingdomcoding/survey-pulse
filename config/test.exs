@@ -9,6 +9,7 @@ config :survey_pulse, SurveyPulse.Repo,
   username: "survey_pulse",
   password: "survey_pulse",
   hostname: "localhost",
+  port: 5434,
   database: "survey_pulse_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
