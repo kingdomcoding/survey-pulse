@@ -14,7 +14,6 @@ defmodule SurveyPulse.SurveysTest do
 
       assert survey.name == "Test Survey"
       assert survey.category == :brand_health
-      assert survey.status == :active
     end
 
     test "list_surveys! returns surveys ordered by inserted_at desc" do

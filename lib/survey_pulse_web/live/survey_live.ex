@@ -13,6 +13,7 @@ defmodule SurveyPulseWeb.SurveyLive do
      assign(socket,
        page_title: survey.name,
        survey: survey,
+       available_filters: load_available_filters(survey.id),
        selected_question_id: nil,
        filters: %{age_group: "all", gender: "all", region: "all"},
        trend_data: []
@@ -104,7 +105,7 @@ defmodule SurveyPulseWeb.SurveyLive do
       </header>
 
       <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        <.filter_bar filters={@filters} />
+        <.filter_bar filters={@filters} available_filters={@available_filters} />
         <.active_filters filters={@filters} />
         <.sample_warning total={total_filtered_responses(@trend_data)} />
 
@@ -298,7 +299,7 @@ defmodule SurveyPulseWeb.SurveyLive do
         >
           <option value="all" selected={@filters.age_group == "all"}>All Ages</option>
           <option
-            :for={ag <- ~w(18-24 25-34 35-44 45-54 55-64 65+)}
+            :for={ag <- @available_filters.age_groups}
             value={ag}
             selected={@filters.age_group == ag}
           >
@@ -316,9 +317,13 @@ defmodule SurveyPulseWeb.SurveyLive do
           class="rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
         >
           <option value="all" selected={@filters.gender == "all"}>All Genders</option>
-          <option value="male" selected={@filters.gender == "male"}>Male</option>
-          <option value="female" selected={@filters.gender == "female"}>Female</option>
-          <option value="non_binary" selected={@filters.gender == "non_binary"}>Non-Binary</option>
+          <option
+            :for={g <- @available_filters.genders}
+            value={g}
+            selected={@filters.gender == g}
+          >
+            {format_gender(g)}
+          </option>
         </select>
       </div>
       <div>
@@ -331,15 +336,12 @@ defmodule SurveyPulseWeb.SurveyLive do
           class="rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
         >
           <option value="all" selected={@filters.region == "all"}>All Regions</option>
-          <option value="north_america" selected={@filters.region == "north_america"}>
-            North America
-          </option>
-          <option value="europe" selected={@filters.region == "europe"}>Europe</option>
-          <option value="asia_pacific" selected={@filters.region == "asia_pacific"}>
-            Asia Pacific
-          </option>
-          <option value="latin_america" selected={@filters.region == "latin_america"}>
-            Latin America
+          <option
+            :for={r <- @available_filters.regions}
+            value={r}
+            selected={@filters.region == r}
+          >
+            {format_region(r)}
           </option>
         </select>
       </div>
@@ -490,6 +492,31 @@ defmodule SurveyPulseWeb.SurveyLive do
   defp category_color(:concept_testing), do: "bg-amber-100 text-amber-700"
   defp category_color(:product_testing), do: "bg-green-100 text-green-700"
   defp category_color(_), do: "bg-gray-100 text-gray-700"
+
+  defp load_available_filters(survey_id) do
+    sql = """
+    SELECT
+      groupUniqArray(age_group) AS age_groups,
+      groupUniqArray(gender) AS genders,
+      groupUniqArray(region) AS regions
+    FROM responses
+    WHERE survey_id = {survey_id:UUID}
+    """
+
+    case SurveyPulse.ClickRepo.query(sql, %{"survey_id" => survey_id}) do
+      {:ok, %{rows: [[age_groups, genders, regions]]}} ->
+        %{
+          age_groups: Enum.sort(age_groups),
+          genders: Enum.sort(genders),
+          regions: Enum.sort(regions)
+        }
+
+      _ ->
+        %{age_groups: [], genders: [], regions: []}
+    end
+  rescue
+    _ -> %{age_groups: [], genders: [], regions: []}
+  end
 
   defp filter_query_params(filters) do
     %{

@@ -39,12 +39,6 @@ defmodule SurveyPulse.Surveys.Survey do
       constraints: [one_of: [:brand_health, :ad_testing, :concept_testing, :product_testing]]
     )
 
-    attribute(:status, :atom,
-      default: :active,
-      public?: true,
-      constraints: [one_of: [:active, :paused, :completed]]
-    )
-
     timestamps()
   end
 
