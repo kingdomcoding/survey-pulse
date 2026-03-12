@@ -9,64 +9,64 @@ defmodule SurveyPulseWeb.SurveyLive do
 
     survey = SurveyPulse.Surveys.get_survey!(id, load: [:questions, :waves])
 
-    filters = %{age_group: "all", gender: "all", region: "all"}
-    first_question = List.first(survey.questions)
-    selected_question_id = first_question && first_question.id
-
-    trend_data = load_trend_data(survey.id, selected_question_id, filters)
-
     {:ok,
      assign(socket,
        page_title: survey.name,
        survey: survey,
-       filters: filters,
-       selected_question_id: selected_question_id,
-       trend_data: trend_data
+       selected_question_id: nil,
+       filters: %{age_group: "all", gender: "all", region: "all"},
+       trend_data: []
      )}
   end
 
   @impl true
-  def handle_event("select_question", %{"question_id" => question_id}, socket) do
-    trend_data =
-      load_trend_data(
-        socket.assigns.survey.id,
-        question_id,
-        socket.assigns.filters
-      )
+  def handle_params(params, _uri, socket) do
+    survey = socket.assigns.survey
+    first_question = List.first(survey.questions)
 
-    {:noreply, assign(socket, selected_question_id: question_id, trend_data: trend_data)}
-  end
+    question_id = params["question"] || (first_question && first_question.id)
 
-  @impl true
-  def handle_event("filter", params, socket) do
     filters = %{
       age_group: params["age_group"] || "all",
       gender: params["gender"] || "all",
       region: params["region"] || "all"
     }
 
-    trend_data =
-      load_trend_data(
-        socket.assigns.survey.id,
-        socket.assigns.selected_question_id,
-        filters
-      )
+    trend_data = load_trend_data(survey.id, question_id, filters)
 
-    {:noreply, assign(socket, filters: filters, trend_data: trend_data)}
+    {:noreply,
+     assign(socket,
+       selected_question_id: question_id,
+       filters: filters,
+       trend_data: trend_data
+     )}
+  end
+
+  @impl true
+  def handle_event("select_question", %{"question_id" => question_id}, socket) do
+    query_params =
+      filter_query_params(socket.assigns.filters)
+      |> Map.put("question", question_id)
+
+    {:noreply, push_patch(socket, to: ~p"/surveys/#{socket.assigns.survey.id}?#{query_params}")}
+  end
+
+  @impl true
+  def handle_event("filter", params, socket) do
+    query_params = %{
+      "age_group" => params["age_group"] || "all",
+      "gender" => params["gender"] || "all",
+      "region" => params["region"] || "all",
+      "question" => socket.assigns.selected_question_id
+    }
+
+    {:noreply, push_patch(socket, to: ~p"/surveys/#{socket.assigns.survey.id}?#{query_params}")}
   end
 
   @impl true
   def handle_event("clear_filters", _params, socket) do
-    filters = %{age_group: "all", gender: "all", region: "all"}
-
-    trend_data =
-      load_trend_data(
-        socket.assigns.survey.id,
-        socket.assigns.selected_question_id,
-        filters
-      )
-
-    {:noreply, assign(socket, filters: filters, trend_data: trend_data)}
+    query_params = %{"question" => socket.assigns.selected_question_id}
+    {:noreply, push_patch(socket, to: ~p"/surveys/#{socket.assigns.survey.id}?#{query_params}")}
   end
 
   @impl true
@@ -490,6 +490,14 @@ defmodule SurveyPulseWeb.SurveyLive do
   defp category_color(:concept_testing), do: "bg-amber-100 text-amber-700"
   defp category_color(:product_testing), do: "bg-green-100 text-green-700"
   defp category_color(_), do: "bg-gray-100 text-gray-700"
+
+  defp filter_query_params(filters) do
+    %{
+      "age_group" => filters.age_group,
+      "gender" => filters.gender,
+      "region" => filters.region
+    }
+  end
 
   defp format_category(:brand_health), do: "Brand Health"
   defp format_category(:ad_testing), do: "Ad Testing"
