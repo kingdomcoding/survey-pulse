@@ -56,6 +56,20 @@ defmodule SurveyPulseWeb.SurveyLive do
   end
 
   @impl true
+  def handle_event("clear_filters", _params, socket) do
+    filters = %{age_group: "all", gender: "all", region: "all"}
+
+    trend_data =
+      load_trend_data(
+        socket.assigns.survey.id,
+        socket.assigns.selected_question_id,
+        filters
+      )
+
+    {:noreply, assign(socket, filters: filters, trend_data: trend_data)}
+  end
+
+  @impl true
   def handle_info({:responses_ingested, _count}, socket) do
     trend_data =
       load_trend_data(
@@ -91,6 +105,8 @@ defmodule SurveyPulseWeb.SurveyLive do
 
       <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
         <.filter_bar filters={@filters} />
+        <.active_filters filters={@filters} />
+        <.sample_warning total={total_filtered_responses(@trend_data)} />
 
         <div class="flex gap-2 overflow-x-auto pb-1">
           <button
@@ -277,6 +293,63 @@ defmodule SurveyPulseWeb.SurveyLive do
       </div>
     </div>
     """
+  end
+
+  defp active_filters(assigns) do
+    ~H"""
+    <div :if={any_filter_active?(@filters)} class="flex items-center gap-2 flex-wrap">
+      <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Filtered by:</span>
+      <span
+        :if={@filters.age_group != "all"}
+        class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700"
+      >
+        Age: {@filters.age_group}
+      </span>
+      <span
+        :if={@filters.gender != "all"}
+        class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700"
+      >
+        Gender: {format_gender(@filters.gender)}
+      </span>
+      <span
+        :if={@filters.region != "all"}
+        class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700"
+      >
+        Region: {format_region(@filters.region)}
+      </span>
+      <button phx-click="clear_filters" class="text-xs text-gray-400 hover:text-gray-600 underline">
+        Clear all
+      </button>
+    </div>
+    """
+  end
+
+  defp sample_warning(assigns) do
+    ~H"""
+    <div
+      :if={@total < 100 and @total > 0}
+      class="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800"
+    >
+      <.icon name="hero-exclamation-triangle" class="h-4 w-4 text-amber-500 shrink-0" />
+      <span>Small sample size ({@total} responses). Results may not be statistically reliable.</span>
+    </div>
+    """
+  end
+
+  defp any_filter_active?(filters) do
+    filters.age_group != "all" or filters.gender != "all" or filters.region != "all"
+  end
+
+  defp format_gender("non_binary"), do: "Non-Binary"
+  defp format_gender(g), do: String.capitalize(g)
+
+  defp format_region("north_america"), do: "North America"
+  defp format_region("asia_pacific"), do: "Asia Pacific"
+  defp format_region("latin_america"), do: "Latin America"
+  defp format_region(r), do: String.capitalize(r)
+
+  defp total_filtered_responses(trend_data) do
+    trend_data |> Enum.map(& &1.response_count) |> Enum.sum()
   end
 
   defp load_trend_data(_survey_id, nil, _filters), do: []
