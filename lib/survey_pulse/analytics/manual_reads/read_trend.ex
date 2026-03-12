@@ -10,6 +10,16 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
     question_id = query.arguments.question_id
     filters = Map.get(query.arguments, :filters, %{})
 
+    question_meta = load_question_meta(question_id)
+
+    if question_meta && question_meta.question_type == :nps do
+      read_nps(survey_id, question_id, filters)
+    else
+      read_scaled(survey_id, question_id, filters)
+    end
+  end
+
+  defp read_scaled(survey_id, question_id, filters) do
     {where_clauses, params} = build_filters(survey_id, question_id, filters)
 
     sql = """
@@ -42,6 +52,55 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
     end
   end
 
+  defp read_nps(survey_id, question_id, filters) do
+    nps_data = load_nps_scores(survey_id, question_id, filters)
+
+    wave_ids = Map.keys(nps_data)
+    waves = load_wave_metadata(wave_ids)
+
+    results =
+      nps_data
+      |> Enum.map(fn {wave_id, data} -> Map.put(data, :wave_id, wave_id) end)
+      |> enrich_with_wave_metadata(waves)
+      |> compute_deltas()
+      |> annotate_significance()
+      |> Enum.map(&struct!(SurveyPulse.Analytics.Trend, Map.put(&1, :question_id, question_id)))
+
+    {:ok, results}
+  end
+
+  defp load_nps_scores(survey_id, question_id, filters) do
+    {where_clauses, params} = build_filters(survey_id, question_id, filters)
+
+    sql = """
+    SELECT
+      wave_id,
+      round(countIf(score >= 9) / count(*) * 100, 1) AS promoter_pct,
+      round(countIf(score <= 6) / count(*) * 100, 1) AS detractor_pct,
+      count(*) AS n
+    FROM responses
+    WHERE #{where_clauses}
+    GROUP BY wave_id
+    ORDER BY wave_id
+    """
+
+    case SurveyPulse.ClickRepo.query(sql, params) do
+      {:ok, %{rows: rows}} ->
+        Map.new(rows, fn [wid, promo, detract, n] ->
+          {wid, %{
+            avg_score: Float.round(promo - detract, 1),
+            top2_box: promo,
+            bot2_box: detract,
+            response_count: n
+          }}
+        end)
+      _ ->
+        %{}
+    end
+  rescue
+    _ -> %{}
+  end
+
   defp row_to_map(columns, row) do
     columns |> Enum.zip(row) |> Map.new(fn {c, v} -> {String.to_existing_atom(c), v} end)
   end
@@ -59,7 +118,7 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
   end
 
   defp load_distribution(survey_id, question_id, filters) do
-    question_meta = load_question_scale(question_id)
+    question_meta = load_question_meta(question_id)
     scale_max = (question_meta && question_meta.scale_max) || 5
     scale_min = (question_meta && question_meta.scale_min) || 1
 
@@ -98,13 +157,21 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
     _ -> %{}
   end
 
-  defp load_question_scale(question_id) do
+  defp load_question_meta(question_id) do
     SurveyPulse.Repo.one(
       from(q in "questions",
         where: q.id == type(^question_id, Ecto.UUID),
-        select: %{scale_min: q.scale_min, scale_max: q.scale_max}
+        select: %{
+          scale_min: q.scale_min,
+          scale_max: q.scale_max,
+          question_type: type(q.question_type, :string)
+        }
       )
     )
+    |> case do
+      nil -> nil
+      meta -> %{meta | question_type: String.to_existing_atom(meta.question_type)}
+    end
   end
 
   defp enrich_with_wave_metadata(data, waves) do

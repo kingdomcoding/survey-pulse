@@ -166,6 +166,7 @@ defmodule SurveyPulseWeb.SurveyLive do
             data-trend={Jason.encode!(trend_data_for_chart(@trend_data))}
             data-scale-min={scale_min(@survey.questions, @selected_question_id)}
             data-scale-max={scale_max(@survey.questions, @selected_question_id)}
+            data-question-type={question_type(@survey.questions, @selected_question_id)}
             class="h-80"
           />
         </div>
@@ -185,13 +186,16 @@ defmodule SurveyPulseWeb.SurveyLive do
                     n
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Avg
+                    {if question_type(@survey.questions, @selected_question_id) == :nps,
+                      do: "NPS Score", else: "Avg"}
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Top 2 Box
+                    {if question_type(@survey.questions, @selected_question_id) == :nps,
+                      do: "Promoters", else: "Top 2 Box"}
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Bot 2 Box
+                    {if question_type(@survey.questions, @selected_question_id) == :nps,
+                      do: "Detractors", else: "Bot 2 Box"}
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Change
@@ -411,7 +415,7 @@ defmodule SurveyPulseWeb.SurveyLive do
   end
 
   defp scale_label(nil), do: ""
-  defp scale_label(%{question_type: :nps}), do: "NPS · 0–10"
+  defp scale_label(%{question_type: :nps}), do: "NPS · −100 to +100"
   defp scale_label(%{question_type: :likert, scale_min: mn, scale_max: mx}), do: "Likert · #{mn}–#{mx}"
   defp scale_label(%{scale_min: mn, scale_max: mx}), do: "Scale · #{mn}–#{mx}"
 
@@ -419,9 +423,17 @@ defmodule SurveyPulseWeb.SurveyLive do
   defp scale_badge_color(%{question_type: :nps}), do: "bg-violet-100 text-violet-700"
   defp scale_badge_color(_), do: "bg-blue-100 text-blue-700"
 
+  defp question_type(questions, id) do
+    case selected_question(questions, id) do
+      nil -> :likert
+      q -> q.question_type
+    end
+  end
+
   defp scale_min(questions, id) do
     case selected_question(questions, id) do
       nil -> 0
+      %{question_type: :nps} -> -100
       q -> q.scale_min
     end
   end
@@ -429,6 +441,7 @@ defmodule SurveyPulseWeb.SurveyLive do
   defp scale_max(questions, id) do
     case selected_question(questions, id) do
       nil -> 10
+      %{question_type: :nps} -> 100
       q -> q.scale_max
     end
   end

@@ -12,6 +12,7 @@ const TrendChart = {
 
   renderChart() {
     const data = JSON.parse(this.el.dataset.trend)
+    const questionType = this.el.dataset.questionType || "likert"
     const scaleMin = parseFloat(this.el.dataset.scaleMin) || 0
     const scaleMax = parseFloat(this.el.dataset.scaleMax) || 10
 
@@ -34,7 +35,7 @@ const TrendChart = {
       data: {
         labels,
         datasets: [{
-          label: "Avg Score",
+          label: questionType === "nps" ? "NPS Score" : "Avg Score",
           data: scores,
           borderColor: "#4f46e5",
           backgroundColor: "rgba(79, 70, 229, 0.08)",
@@ -81,7 +82,7 @@ const TrendChart = {
             max: scaleMax,
             grid: { color: "rgba(0,0,0,0.04)" },
             ticks: { font: { size: 12 }, color: "#6b7280" },
-            title: { display: true, text: "Score", font: { size: 12 }, color: "#9ca3af" }
+            title: { display: true, text: questionType === "nps" ? "NPS Score" : "Score", font: { size: 12 }, color: "#9ca3af" }
           },
           x: {
             grid: { display: false },
