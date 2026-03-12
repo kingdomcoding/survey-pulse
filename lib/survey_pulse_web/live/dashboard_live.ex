@@ -83,9 +83,9 @@ defmodule SurveyPulseWeb.DashboardLive do
 
         <div class="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
           <div>
-            <p class="text-xs text-gray-400 uppercase tracking-wide">Responses</p>
+            <p class="text-xs text-gray-400 uppercase tracking-wide">Respondents</p>
             <p class="text-lg font-semibold text-gray-900 mt-0.5">
-              {format_number(Map.get(@metrics, :total_responses, 0))}
+              {format_number(Map.get(@metrics, :total_respondents, 0))}
             </p>
             <p class="text-xs text-gray-400 mt-0.5">across {@survey.wave_count} waves</p>
           </div>
@@ -95,13 +95,15 @@ defmodule SurveyPulseWeb.DashboardLive do
               {Map.get(@metrics, :latest_wave_label, "—")}
             </p>
             <p class="text-xs text-gray-400 mt-0.5">
-              {format_number(Map.get(@metrics, :latest_wave_responses, 0))} responses
+              {format_number(Map.get(@metrics, :latest_wave_responses, 0))} respondents
             </p>
           </div>
           <div>
             <p class="text-xs text-gray-400 uppercase tracking-wide">Trend</p>
             <.trend_indicator delta={Map.get(@metrics, :latest_delta, 0)} />
-            <p class="text-xs text-gray-400 mt-0.5">vs prev wave</p>
+            <p class="text-xs text-gray-400 mt-0.5">
+              {Map.get(@metrics, :sparkline_question_code, "")} vs prev wave
+            </p>
           </div>
         </div>
 
@@ -164,60 +166,108 @@ defmodule SurveyPulseWeb.DashboardLive do
   end
 
   defp compute_survey_topline(survey_id) do
-    wave_sql = """
+    waves = load_waves_ordered(survey_id)
+    first_question = load_first_question(survey_id)
+
+    if waves == [] or first_question == nil do
+      empty_topline()
+    else
+      wave_id_order = Enum.map(waves, & &1.id)
+      scores_by_wave = load_question_scores(survey_id, first_question.id)
+      respondent_count = load_respondent_count(survey_id)
+
+      ordered = Enum.map(wave_id_order, &Map.get(scores_by_wave, &1, %{avg: 0.0, count: 0}))
+      score_values = Enum.map(ordered, & &1.avg)
+      latest_wave = List.last(waves)
+      latest_scores = List.last(ordered) || %{count: 0}
+
+      delta =
+        if length(score_values) >= 2 do
+          [second_last, last] = Enum.take(score_values, -2)
+          Float.round(last - second_last, 4)
+        else
+          0.0
+        end
+
+      %{
+        total_respondents: respondent_count,
+        latest_wave_label: latest_wave.label,
+        latest_wave_responses: Map.get(latest_scores, :count, 0),
+        latest_delta: delta,
+        wave_scores: score_values,
+        sparkline_question_code: first_question.code
+      }
+    end
+  end
+
+  defp empty_topline do
+    %{
+      total_respondents: 0,
+      latest_wave_label: "—",
+      latest_wave_responses: 0,
+      latest_delta: 0.0,
+      wave_scores: [],
+      sparkline_question_code: nil
+    }
+  end
+
+  defp load_waves_ordered(survey_id) do
+    SurveyPulse.Repo.all(
+      from(w in "waves",
+        where: w.survey_id == type(^survey_id, Ecto.UUID),
+        order_by: [asc: w.wave_number],
+        select: %{id: w.id, wave_number: w.wave_number, label: w.label}
+      )
+    )
+  end
+
+  defp load_first_question(survey_id) do
+    SurveyPulse.Repo.one(
+      from(q in "questions",
+        where: q.survey_id == type(^survey_id, Ecto.UUID),
+        where: q.question_type != "nps",
+        order_by: [asc: q.inserted_at],
+        limit: 1,
+        select: %{id: q.id, code: q.code}
+      )
+    )
+  end
+
+  defp load_question_scores(survey_id, question_id) do
+    sql = """
     SELECT
       wave_id,
       round(avgMerge(avg_score), 2) AS avg_score,
       countMerge(response_count) AS response_count
     FROM wave_question_metrics
     WHERE survey_id = {survey_id:UUID}
+      AND question_id = {question_id:UUID}
     GROUP BY wave_id
-    ORDER BY wave_id
     """
 
-    case SurveyPulse.ClickRepo.query(wave_sql, %{"survey_id" => survey_id}) do
-      {:ok, %{rows: rows}} when rows != [] ->
-        scores = Enum.map(rows, fn [_wid, avg, _cnt] -> avg end)
-        counts = Enum.map(rows, fn [_wid, _avg, cnt] -> cnt end)
-        total = Enum.sum(counts)
-        latest_count = List.last(counts) || 0
-        latest_wave = load_latest_wave(survey_id)
-
-        delta =
-          if length(scores) >= 2 do
-            [second_last, last] = Enum.take(scores, -2)
-            Float.round((last || 0) - (second_last || 0), 4)
-          else
-            0.0
-          end
-
-        %{
-          total_responses: total,
-          latest_wave_label: (latest_wave && latest_wave.label) || "—",
-          latest_wave_responses: latest_count,
-          latest_delta: delta,
-          wave_scores: scores
-        }
-
+    case SurveyPulse.ClickRepo.query(sql, %{
+      "survey_id" => survey_id,
+      "question_id" => question_id
+    }) do
+      {:ok, %{rows: rows}} ->
+        Map.new(rows, fn [wid, avg, cnt] ->
+          {wid, %{avg: avg, count: cnt}}
+        end)
       _ ->
-        %{
-          total_responses: 0,
-          latest_wave_label: "—",
-          latest_wave_responses: 0,
-          latest_delta: 0.0,
-          wave_scores: []
-        }
+        %{}
     end
   end
 
-  defp load_latest_wave(survey_id) do
-    SurveyPulse.Repo.one(
-      from(w in "waves",
-        where: w.survey_id == type(^survey_id, Ecto.UUID),
-        order_by: [desc: w.wave_number],
-        limit: 1,
-        select: %{label: w.label}
-      )
-    )
+  defp load_respondent_count(survey_id) do
+    sql = """
+    SELECT count(DISTINCT respondent_id)
+    FROM responses
+    WHERE survey_id = {survey_id:UUID}
+    """
+
+    case SurveyPulse.ClickRepo.query(sql, %{"survey_id" => survey_id}) do
+      {:ok, %{rows: [[count]]}} -> count
+      _ -> 0
+    end
   end
 end
