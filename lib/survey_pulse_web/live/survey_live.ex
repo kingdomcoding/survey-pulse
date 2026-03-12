@@ -98,14 +98,20 @@ defmodule SurveyPulseWeb.SurveyLive do
             phx-click="select_question"
             phx-value-question_id={q.id}
             class={[
-              "px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors",
+              "px-4 py-2 rounded-lg text-sm font-medium transition-colors flex flex-col items-start",
               if(q.id == @selected_question_id,
                 do: "bg-indigo-600 text-white shadow-sm",
                 else: "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
               )
             ]}
           >
-            {q.code}
+            <span class="font-semibold">{q.code}</span>
+            <span class={[
+              "text-xs mt-0.5 max-w-[180px] truncate",
+              if(q.id == @selected_question_id, do: "text-indigo-200", else: "text-gray-400")
+            ]}>
+              {q.text}
+            </span>
           </button>
         </div>
 
