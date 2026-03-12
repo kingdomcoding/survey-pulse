@@ -105,7 +105,7 @@ defmodule SurveyPulse.Seeds do
         SurveyPulse.Surveys.create_wave!(%{
           survey_id: survey.id,
           wave_number: wave_num,
-          label: format_wave_label(wave_start),
+          label: format_wave_label(wave_num, wave_start),
           started_at: wave_start,
           ended_at: wave_end
         })
@@ -219,8 +219,8 @@ defmodule SurveyPulse.Seeds do
   defp noise_for_question_type(:likert), do: 0.8
   defp noise_for_question_type(_), do: 1.0
 
-  defp format_wave_label(datetime) do
-    month = datetime |> DateTime.to_date() |> Date.beginning_of_month()
-    Calendar.strftime(month, "%b %Y")
+  defp format_wave_label(wave_num, datetime) do
+    month = Calendar.strftime(datetime, "%b %Y")
+    "W#{wave_num} · #{month}"
   end
 end
