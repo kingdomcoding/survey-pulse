@@ -146,6 +146,20 @@ defmodule SurveyPulseWeb.SurveyLive do
               {scale_label(selected_question(@survey.questions, @selected_question_id))}
             </span>
           </div>
+          <div class="flex items-center gap-4 mb-4 text-xs text-gray-500">
+            <div class="flex items-center gap-1.5">
+              <span class="inline-block w-3 h-3 rounded-full bg-indigo-500"></span>
+              Score trend
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="inline-block w-3 h-3 rounded-full bg-emerald-500"></span>
+              Significant increase
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="inline-block w-3 h-3 rounded-full bg-red-500"></span>
+              Significant decrease
+            </div>
+          </div>
           <div
             id="trend-chart"
             phx-hook="TrendChart"
