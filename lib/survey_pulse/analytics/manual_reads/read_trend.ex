@@ -39,13 +39,14 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
       wave_ids = Enum.map(raw_data, & &1.wave_id)
       waves = load_wave_metadata(wave_ids)
       distribution = load_distribution(survey_id, question_id, filters)
+      variance_map = load_variance(survey_id, question_id, filters)
 
       results =
         raw_data
         |> enrich_with_wave_metadata(waves)
         |> enrich_with_distribution(distribution)
         |> compute_deltas()
-        |> annotate_significance()
+        |> annotate_significance(variance_map)
         |> Enum.map(&struct!(SurveyPulse.Analytics.Trend, Map.put(&1, :question_id, question_id)))
 
       {:ok, results}
@@ -63,7 +64,7 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
       |> Enum.map(fn {wave_id, data} -> Map.put(data, :wave_id, wave_id) end)
       |> enrich_with_wave_metadata(waves)
       |> compute_deltas()
-      |> annotate_significance()
+      |> annotate_significance(load_variance(survey_id, question_id, filters))
       |> Enum.map(&struct!(SurveyPulse.Analytics.Trend, Map.put(&1, :question_id, question_id)))
 
     {:ok, results}
@@ -214,17 +215,61 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
     Enum.reverse(results)
   end
 
-  defp annotate_significance(waves) do
-    Enum.map(waves, fn wave ->
-      threshold = significance_threshold(wave.response_count)
-      Map.put(wave, :significant?, abs(wave.delta) >= threshold)
-    end)
+  defp load_variance(survey_id, question_id, filters) do
+    {where_clauses, params} = build_filters(survey_id, question_id, filters)
+
+    sql = """
+    SELECT
+      wave_id,
+      varPop(score) AS variance,
+      count(*) AS n
+    FROM responses
+    WHERE #{where_clauses}
+    GROUP BY wave_id
+    """
+
+    case SurveyPulse.ClickRepo.query(sql, params) do
+      {:ok, %{rows: rows}} ->
+        Map.new(rows, fn [wid, var, n] ->
+          {wid, %{variance: var, n: n}}
+        end)
+      _ ->
+        %{}
+    end
+  rescue
+    _ -> %{}
   end
 
-  defp significance_threshold(n) when n >= 1000, do: 0.10
-  defp significance_threshold(n) when n >= 500, do: 0.15
-  defp significance_threshold(n) when n >= 100, do: 0.25
-  defp significance_threshold(_), do: 0.50
+  defp annotate_significance([], _variance_map), do: []
+
+  defp annotate_significance([first | rest], variance_map) do
+    first_annotated = Map.put(first, :significant?, false)
+
+    {results, _} =
+      Enum.reduce(rest, {[first_annotated], first}, fn curr, {acc, prev} ->
+        significant = z_test_significant?(prev, curr, variance_map)
+        {[Map.put(curr, :significant?, significant) | acc], curr}
+      end)
+
+    Enum.reverse(results)
+  end
+
+  defp z_test_significant?(prev, curr, variance_map) do
+    stats_prev = Map.get(variance_map, prev.wave_id, %{variance: 1.0, n: 1})
+    stats_curr = Map.get(variance_map, curr.wave_id, %{variance: 1.0, n: 1})
+
+    n1 = max(stats_prev.n, 1)
+    n2 = max(stats_curr.n, 1)
+
+    se = :math.sqrt(stats_prev.variance / n1 + stats_curr.variance / n2)
+
+    if se > 0 do
+      z = abs(curr.avg_score - prev.avg_score) / se
+      z > 1.96
+    else
+      false
+    end
+  end
 
   defp build_filters(survey_id, question_id, filters) do
     base_clauses = "survey_id = {survey_id:UUID} AND question_id = {question_id:UUID}"
