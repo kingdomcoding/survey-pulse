@@ -36,10 +36,10 @@ services:
         soft: 262144
         hard: 262144
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      test: ["CMD-SHELL", "clickhouse-client --user survey_pulse --password survey_pulse --query 'SELECT 1'"]
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
 
   app:
     build: .
@@ -50,9 +50,9 @@ services:
     environment:
       DATABASE_URL: "ecto://survey_pulse:survey_pulse@postgres:5432/survey_pulse_dev"
       CLICKHOUSE_URL: "http://survey_pulse:survey_pulse@clickhouse:8123/survey_pulse"
-      PHX_HOST: localhost
+      PHX_HOST: surveypulse.josboxoffice.com
       PORT: "4600"
-      SECRET_KEY_BASE: "RhwdtKMHxEGME9QM7Z1Fqf6e4QZsNjq0L5V7MgK3yKbGt4uPAz1rQEsQfMN8J+x"
+      SECRET_KEY_BASE: "o4M1mHsxieCj+RMrPgz8k4TVyamr37eydmJGcfJuxgYUc77xHRdFyM9u3Z/0caZs"
     depends_on:
       postgres:
         condition: service_healthy

@@ -25,10 +25,11 @@ RUN mix deps.compile
 COPY priv priv
 COPY lib lib
 COPY assets assets
+COPY rel rel
 
 RUN cd assets && npm install
-RUN mix assets.deploy
 RUN mix compile
+RUN mix assets.deploy
 
 RUN mix release
 

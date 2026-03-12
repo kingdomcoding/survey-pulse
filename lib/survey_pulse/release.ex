@@ -11,12 +11,7 @@ defmodule SurveyPulse.Release do
   end
 
   def seed do
-    load_app()
-
-    for repo <- repos() do
-      {:ok, _, _} = Ecto.Migrator.with_repo(repo, fn _repo -> :ok end)
-    end
-
+    {:ok, _} = Application.ensure_all_started(@app)
     SurveyPulse.Seeds.run()
   end
 
