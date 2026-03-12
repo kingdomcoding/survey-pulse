@@ -146,29 +146,44 @@ defmodule SurveyPulseWeb.SurveyLive do
               {scale_label(selected_question(@survey.questions, @selected_question_id))}
             </span>
           </div>
-          <div class="flex items-center gap-4 mb-4 text-xs text-gray-500">
-            <div class="flex items-center gap-1.5">
-              <span class="inline-block w-3 h-3 rounded-full bg-indigo-500"></span>
-              Score trend
+          <%= if @trend_data == [] do %>
+            <div class="h-80 flex items-center justify-center">
+              <div class="text-center">
+                <.icon name="hero-chart-bar" class="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p class="text-sm text-gray-500">No data available for this question</p>
+                <p :if={any_filter_active?(@filters)} class="text-xs text-gray-400 mt-1">
+                  Try adjusting your filters
+                </p>
+              </div>
             </div>
-            <div class="flex items-center gap-1.5">
-              <span class="inline-block w-3 h-3 rounded-full bg-emerald-500"></span>
-              Significant increase
+          <% else %>
+            <div class="flex items-center gap-5 mb-4 text-xs text-gray-500">
+              <div class="flex items-center gap-1.5">
+                <span class="inline-block w-6 h-0.5 bg-indigo-500 rounded"></span>
+                <span class="inline-flex w-2 h-2 rounded-full bg-indigo-500"></span>
+                Score trend
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="inline-flex w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm">
+                </span>
+                Significant increase
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="inline-flex w-3 h-3 rounded-full bg-red-500 border-2 border-white shadow-sm">
+                </span>
+                Significant decrease
+              </div>
             </div>
-            <div class="flex items-center gap-1.5">
-              <span class="inline-block w-3 h-3 rounded-full bg-red-500"></span>
-              Significant decrease
-            </div>
-          </div>
-          <div
-            id="trend-chart"
-            phx-hook="TrendChart"
-            data-trend={Jason.encode!(trend_data_for_chart(@trend_data))}
-            data-scale-min={scale_min(@survey.questions, @selected_question_id)}
-            data-scale-max={scale_max(@survey.questions, @selected_question_id)}
-            data-question-type={question_type(@survey.questions, @selected_question_id)}
-            class="h-80"
-          />
+            <div
+              id="trend-chart"
+              phx-hook="TrendChart"
+              data-trend={Jason.encode!(trend_data_for_chart(@trend_data))}
+              data-scale-min={scale_min(@survey.questions, @selected_question_id)}
+              data-scale-max={scale_max(@survey.questions, @selected_question_id)}
+              data-question-type={question_type(@survey.questions, @selected_question_id)}
+              class="h-80"
+            />
+          <% end %>
         </div>
 
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -206,6 +221,11 @@ defmodule SurveyPulseWeb.SurveyLive do
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-100">
+                <tr :if={@trend_data == []}>
+                  <td colspan="7" class="px-6 py-12 text-center text-sm text-gray-500">
+                    No wave data available
+                  </td>
+                </tr>
                 <tr :for={point <- @trend_data} class="hover:bg-gray-50">
                   <td class="px-6 py-4 text-sm font-medium text-gray-900">
                     {point.wave_label}
