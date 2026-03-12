@@ -31,8 +31,9 @@ defmodule SurveyPulseWeb.DashboardLiveTest do
     assert has_element?(view, "a[href='/surveys/#{survey.id}']")
   end
 
-  test "displays live indicator", %{conn: conn} do
+  test "displays summary stats in header", %{conn: conn} do
     {:ok, _view, html} = live(conn, ~p"/")
-    assert html =~ "Live"
+    assert html =~ "surveys"
+    assert html =~ "respondents"
   end
 end

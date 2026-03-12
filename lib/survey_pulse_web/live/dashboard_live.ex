@@ -37,14 +37,9 @@ defmodule SurveyPulseWeb.DashboardLive do
               <h1 class="text-2xl font-semibold text-gray-900">SurveyPulse</h1>
               <p class="text-sm text-gray-500 mt-0.5">Consumer insights dashboard</p>
             </div>
-            <div class="flex items-center gap-1.5 text-xs text-gray-400">
-              <span class="relative flex h-2 w-2">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75">
-                </span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              Live
-            </div>
+            <span class="text-xs text-gray-400">
+              {length(@surveys)} surveys · {total_respondents(@survey_metrics)} respondents
+            </span>
           </div>
         </div>
       </header>
@@ -158,6 +153,14 @@ defmodule SurveyPulseWeb.DashboardLive do
     do: "#{Float.round(n / 1_000, 1)}K"
 
   defp format_number(n), do: "#{n}"
+
+  defp total_respondents(survey_metrics) do
+    survey_metrics
+    |> Map.values()
+    |> Enum.map(&Map.get(&1, :total_respondents, 0))
+    |> Enum.sum()
+    |> format_number()
+  end
 
   defp load_survey_metrics(surveys) do
     Map.new(surveys, fn survey ->
