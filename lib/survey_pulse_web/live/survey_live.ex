@@ -116,14 +116,26 @@ defmodule SurveyPulseWeb.SurveyLive do
         </div>
 
         <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 class="text-lg font-semibold text-gray-900 mb-1">Wave-over-Wave Trend</h2>
-          <p class="text-sm text-gray-500 mb-6">
-            {selected_question_text(@survey.questions, @selected_question_id)}
-          </p>
+          <div class="flex items-start justify-between mb-6">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900 mb-1">Wave-over-Wave Trend</h2>
+              <p class="text-sm text-gray-500">
+                {selected_question_text(@survey.questions, @selected_question_id)}
+              </p>
+            </div>
+            <span class={[
+              "inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium shrink-0",
+              scale_badge_color(selected_question(@survey.questions, @selected_question_id))
+            ]}>
+              {scale_label(selected_question(@survey.questions, @selected_question_id))}
+            </span>
+          </div>
           <div
             id="trend-chart"
             phx-hook="TrendChart"
             data-trend={Jason.encode!(trend_data_for_chart(@trend_data))}
+            data-scale-min={scale_min(@survey.questions, @selected_question_id)}
+            data-scale-max={scale_max(@survey.questions, @selected_question_id)}
             class="h-80"
           />
         </div>
@@ -290,10 +302,37 @@ defmodule SurveyPulseWeb.SurveyLive do
     end)
   end
 
+  defp selected_question(questions, selected_id) do
+    Enum.find(questions, &(&1.id == selected_id))
+  end
+
   defp selected_question_text(questions, selected_id) do
-    case Enum.find(questions, &(&1.id == selected_id)) do
+    case selected_question(questions, selected_id) do
       nil -> ""
       q -> q.text
+    end
+  end
+
+  defp scale_label(nil), do: ""
+  defp scale_label(%{question_type: :nps}), do: "NPS · 0–10"
+  defp scale_label(%{question_type: :likert, scale_min: mn, scale_max: mx}), do: "Likert · #{mn}–#{mx}"
+  defp scale_label(%{scale_min: mn, scale_max: mx}), do: "Scale · #{mn}–#{mx}"
+
+  defp scale_badge_color(nil), do: "bg-gray-100 text-gray-500"
+  defp scale_badge_color(%{question_type: :nps}), do: "bg-violet-100 text-violet-700"
+  defp scale_badge_color(_), do: "bg-blue-100 text-blue-700"
+
+  defp scale_min(questions, id) do
+    case selected_question(questions, id) do
+      nil -> 0
+      q -> q.scale_min
+    end
+  end
+
+  defp scale_max(questions, id) do
+    case selected_question(questions, id) do
+      nil -> 10
+      q -> q.scale_max
     end
   end
 

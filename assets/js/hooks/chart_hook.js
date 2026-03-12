@@ -12,6 +12,8 @@ const TrendChart = {
 
   renderChart() {
     const data = JSON.parse(this.el.dataset.trend)
+    const scaleMin = parseFloat(this.el.dataset.scaleMin) || 0
+    const scaleMax = parseFloat(this.el.dataset.scaleMax) || 10
 
     if (this.chart) {
       this.chart.destroy()
@@ -75,8 +77,11 @@ const TrendChart = {
         },
         scales: {
           y: {
+            min: scaleMin,
+            max: scaleMax,
             grid: { color: "rgba(0,0,0,0.04)" },
-            ticks: { font: { size: 12 }, color: "#6b7280" }
+            ticks: { font: { size: 12 }, color: "#6b7280" },
+            title: { display: true, text: "Score", font: { size: 12 }, color: "#9ca3af" }
           },
           x: {
             grid: { display: false },
