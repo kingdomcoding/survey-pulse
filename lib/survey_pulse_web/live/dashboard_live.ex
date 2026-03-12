@@ -213,7 +213,7 @@ defmodule SurveyPulseWeb.DashboardLive do
   defp load_latest_wave(survey_id) do
     SurveyPulse.Repo.one(
       from(w in "waves",
-        where: w.survey_id == ^survey_id,
+        where: w.survey_id == type(^survey_id, Ecto.UUID),
         order_by: [desc: w.wave_number],
         limit: 1,
         select: %{label: w.label}

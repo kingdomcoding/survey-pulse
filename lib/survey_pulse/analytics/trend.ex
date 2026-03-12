@@ -31,5 +31,7 @@ defmodule SurveyPulse.Analytics.Trend do
     attribute(:delta, :float, public?: true)
     attribute(:pct_change, :float, public?: true)
     attribute(:significant?, :boolean, public?: true)
+    attribute(:top2_box, :float, public?: true)
+    attribute(:bot2_box, :float, public?: true)
   end
 end

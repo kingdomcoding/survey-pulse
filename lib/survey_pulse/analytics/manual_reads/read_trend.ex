@@ -2,6 +2,8 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
   @moduledoc false
   use Ash.Resource.ManualRead
 
+  import Ecto.Query
+
   @impl true
   def read(query, _data_layer_query, _opts, _context) do
     survey_id = query.arguments.survey_id
@@ -26,10 +28,12 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
 
       wave_ids = Enum.map(raw_data, & &1.wave_id)
       waves = load_wave_metadata(wave_ids)
+      distribution = load_distribution(survey_id, question_id, filters)
 
       results =
         raw_data
         |> enrich_with_wave_metadata(waves)
+        |> enrich_with_distribution(distribution)
         |> compute_deltas()
         |> annotate_significance()
         |> Enum.map(&struct!(SurveyPulse.Analytics.Trend, Map.put(&1, :question_id, question_id)))
@@ -45,14 +49,62 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
   defp load_wave_metadata([]), do: %{}
 
   defp load_wave_metadata(wave_ids) do
-    import Ecto.Query
-
     SurveyPulse.Repo.all(
-      from w in "waves",
-        where: w.id in ^wave_ids,
+      from(w in "waves",
+        where: w.id in type(^wave_ids, {:array, Ecto.UUID}),
         select: %{id: w.id, wave_number: w.wave_number, label: w.label}
+      )
     )
     |> Map.new(&{&1.id, &1})
+  end
+
+  defp load_distribution(survey_id, question_id, filters) do
+    question_meta = load_question_scale(question_id)
+    scale_max = (question_meta && question_meta.scale_max) || 5
+    scale_min = (question_meta && question_meta.scale_min) || 1
+
+    top2_threshold = scale_max - 1
+    bot2_threshold = scale_min + 1
+
+    {where_clauses, params} = build_filters(survey_id, question_id, filters)
+
+    params =
+      Map.merge(params, %{
+        "top2_threshold" => top2_threshold,
+        "bot2_threshold" => bot2_threshold
+      })
+
+    sql = """
+    SELECT
+      wave_id,
+      countIf(score >= {top2_threshold:Int32}) / count(*) AS top2_box,
+      countIf(score <= {bot2_threshold:Int32}) / count(*) AS bot2_box
+    FROM responses
+    WHERE #{where_clauses}
+    GROUP BY wave_id
+    ORDER BY wave_id
+    """
+
+    case SurveyPulse.ClickRepo.query(sql, params) do
+      {:ok, %{rows: rows}} ->
+        Map.new(rows, fn [wid, t2b, b2b] ->
+          {wid, %{top2_box: Float.round(t2b * 100, 1), bot2_box: Float.round(b2b * 100, 1)}}
+        end)
+
+      _ ->
+        %{}
+    end
+  rescue
+    _ -> %{}
+  end
+
+  defp load_question_scale(question_id) do
+    SurveyPulse.Repo.one(
+      from(q in "questions",
+        where: q.id == type(^question_id, Ecto.UUID),
+        select: %{scale_min: q.scale_min, scale_max: q.scale_max}
+      )
+    )
   end
 
   defp enrich_with_wave_metadata(data, waves) do
@@ -65,6 +117,13 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
       |> Map.put(:wave_label, wave.label)
     end)
     |> Enum.sort_by(& &1.wave_number)
+  end
+
+  defp enrich_with_distribution(data, distribution) do
+    Enum.map(data, fn row ->
+      dist = Map.get(distribution, row.wave_id, %{top2_box: 0.0, bot2_box: 0.0})
+      Map.merge(row, dist)
+    end)
   end
 
   defp compute_deltas([]), do: []

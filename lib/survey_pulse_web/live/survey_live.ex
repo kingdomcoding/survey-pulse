@@ -168,10 +168,16 @@ defmodule SurveyPulseWeb.SurveyLive do
                     Wave
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Responses
+                    n
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Avg Score
+                    Avg
+                  </th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Top 2 Box
+                  </th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Bot 2 Box
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Change
@@ -192,13 +198,15 @@ defmodule SurveyPulseWeb.SurveyLive do
                   <td class="px-6 py-4 text-sm text-gray-900 font-semibold text-right">
                     {point.avg_score}
                   </td>
+                  <td class="px-6 py-4 text-sm text-emerald-600 font-medium text-right">
+                    {point.top2_box}%
+                  </td>
+                  <td class="px-6 py-4 text-sm text-red-600 font-medium text-right">
+                    {point.bot2_box}%
+                  </td>
                   <td class={[
                     "px-6 py-4 text-sm font-medium text-right",
-                    cond do
-                      point.delta > 0 -> "text-emerald-600"
-                      point.delta < 0 -> "text-red-600"
-                      true -> "text-gray-400"
-                    end
+                    delta_color(point.delta)
                   ]}>
                     {format_delta(point.delta)}
                   </td>
@@ -370,7 +378,9 @@ defmodule SurveyPulseWeb.SurveyLive do
         avg_score: point.avg_score,
         delta: point.delta,
         response_count: point.response_count,
-        significant: point.significant?
+        significant: point.significant?,
+        top2_box: point.top2_box,
+        bot2_box: point.bot2_box
       }
     end)
   end
@@ -408,6 +418,10 @@ defmodule SurveyPulseWeb.SurveyLive do
       q -> q.scale_max
     end
   end
+
+  defp delta_color(delta) when is_float(delta) and delta > 0, do: "text-emerald-600"
+  defp delta_color(delta) when is_float(delta) and delta < 0, do: "text-red-600"
+  defp delta_color(_), do: "text-gray-400"
 
   defp format_delta(delta) when is_float(delta) and delta > 0, do: "+#{Float.round(delta, 2)}"
   defp format_delta(delta) when is_float(delta) and delta < 0, do: "#{Float.round(delta, 2)}"
