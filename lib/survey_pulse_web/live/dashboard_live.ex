@@ -1,6 +1,8 @@
 defmodule SurveyPulseWeb.DashboardLive do
   use SurveyPulseWeb, :live_view
 
+  import Ecto.Query
+
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
@@ -85,17 +87,31 @@ defmodule SurveyPulseWeb.DashboardLive do
             <p class="text-lg font-semibold text-gray-900 mt-0.5">
               {format_number(Map.get(@metrics, :total_responses, 0))}
             </p>
+            <p class="text-xs text-gray-400 mt-0.5">across {@survey.wave_count} waves</p>
           </div>
           <div>
-            <p class="text-xs text-gray-400 uppercase tracking-wide">Avg Score</p>
+            <p class="text-xs text-gray-400 uppercase tracking-wide">Latest Wave</p>
             <p class="text-lg font-semibold text-gray-900 mt-0.5">
-              {format_score(Map.get(@metrics, :avg_score, 0))}
+              {Map.get(@metrics, :latest_wave_label, "—")}
+            </p>
+            <p class="text-xs text-gray-400 mt-0.5">
+              {format_number(Map.get(@metrics, :latest_wave_responses, 0))} responses
             </p>
           </div>
           <div>
-            <p class="text-xs text-gray-400 uppercase tracking-wide">Latest Trend</p>
+            <p class="text-xs text-gray-400 uppercase tracking-wide">Trend</p>
             <.trend_indicator delta={Map.get(@metrics, :latest_delta, 0)} />
+            <p class="text-xs text-gray-400 mt-0.5">vs prev wave</p>
           </div>
+        </div>
+
+        <div class="pt-3 mt-4 border-t border-gray-100">
+          <div
+            id={"spark-#{@survey.id}"}
+            phx-hook="SparkLine"
+            data-scores={Jason.encode!(Map.get(@metrics, :wave_scores, []))}
+            class="h-10"
+          />
         </div>
       </div>
     </.link>
@@ -106,23 +122,20 @@ defmodule SurveyPulseWeb.DashboardLive do
     ~H"""
     <p class={[
       "text-lg font-semibold mt-0.5",
-      cond do
-        @delta > 0 -> "text-emerald-600"
-        @delta < 0 -> "text-red-600"
-        true -> "text-gray-400"
-      end
+      delta_color(@delta)
     ]}>
-      {cond do
-        @delta > 0 -> "+#{format_delta_value(@delta)}"
-        @delta < 0 -> format_delta_value(@delta)
-        true -> "—"
-      end}
+      {format_trend(@delta)}
     </p>
     """
   end
 
-  defp format_delta_value(delta) when is_float(delta), do: Float.round(delta, 2)
-  defp format_delta_value(delta), do: delta
+  defp delta_color(delta) when delta > 0, do: "text-emerald-600"
+  defp delta_color(delta) when delta < 0, do: "text-red-600"
+  defp delta_color(_), do: "text-gray-400"
+
+  defp format_trend(delta) when is_float(delta) and delta > 0, do: "+#{Float.round(delta, 2)}"
+  defp format_trend(delta) when is_float(delta) and delta < 0, do: "#{Float.round(delta, 2)}"
+  defp format_trend(_), do: "—"
 
   defp category_color(:brand_health), do: "bg-blue-100 text-blue-700"
   defp category_color(:ad_testing), do: "bg-purple-100 text-purple-700"
@@ -144,9 +157,6 @@ defmodule SurveyPulseWeb.DashboardLive do
 
   defp format_number(n), do: "#{n}"
 
-  defp format_score(score) when is_float(score), do: Float.round(score, 1)
-  defp format_score(score), do: score
-
   defp load_survey_metrics(surveys) do
     Map.new(surveys, fn survey ->
       {survey.id, compute_survey_topline(survey.id)}
@@ -154,42 +164,60 @@ defmodule SurveyPulseWeb.DashboardLive do
   end
 
   defp compute_survey_topline(survey_id) do
-    sql = """
-    SELECT
-      countMerge(response_count) AS total_responses,
-      round(avgMerge(avg_score), 2) AS avg_score
-    FROM wave_question_metrics
-    WHERE survey_id = {survey_id:UUID}
-    """
-
-    case SurveyPulse.ClickRepo.query(sql, %{"survey_id" => survey_id}) do
-      {:ok, %{rows: [[total, avg]]}} ->
-        delta = compute_latest_delta(survey_id)
-        %{total_responses: total || 0, avg_score: avg || 0.0, latest_delta: delta}
-
-      _ ->
-        %{total_responses: 0, avg_score: 0.0, latest_delta: 0.0}
-    end
-  end
-
-  defp compute_latest_delta(survey_id) do
-    sql = """
+    wave_sql = """
     SELECT
       wave_id,
-      round(avgMerge(avg_score), 4) AS avg_score
+      round(avgMerge(avg_score), 2) AS avg_score,
+      countMerge(response_count) AS response_count
     FROM wave_question_metrics
     WHERE survey_id = {survey_id:UUID}
     GROUP BY wave_id
     ORDER BY wave_id
     """
 
-    case SurveyPulse.ClickRepo.query(sql, %{"survey_id" => survey_id}) do
-      {:ok, %{rows: rows}} when length(rows) >= 2 ->
-        [second_last, last] = Enum.take(rows, -2)
-        (Enum.at(last, 1) || 0) - (Enum.at(second_last, 1) || 0)
+    case SurveyPulse.ClickRepo.query(wave_sql, %{"survey_id" => survey_id}) do
+      {:ok, %{rows: rows}} when rows != [] ->
+        scores = Enum.map(rows, fn [_wid, avg, _cnt] -> avg end)
+        counts = Enum.map(rows, fn [_wid, _avg, cnt] -> cnt end)
+        total = Enum.sum(counts)
+        latest_count = List.last(counts) || 0
+        latest_wave = load_latest_wave(survey_id)
+
+        delta =
+          if length(scores) >= 2 do
+            [second_last, last] = Enum.take(scores, -2)
+            Float.round((last || 0) - (second_last || 0), 4)
+          else
+            0.0
+          end
+
+        %{
+          total_responses: total,
+          latest_wave_label: (latest_wave && latest_wave.label) || "—",
+          latest_wave_responses: latest_count,
+          latest_delta: delta,
+          wave_scores: scores
+        }
 
       _ ->
-        0.0
+        %{
+          total_responses: 0,
+          latest_wave_label: "—",
+          latest_wave_responses: 0,
+          latest_delta: 0.0,
+          wave_scores: []
+        }
     end
+  end
+
+  defp load_latest_wave(survey_id) do
+    SurveyPulse.Repo.one(
+      from(w in "waves",
+        where: w.survey_id == ^survey_id,
+        order_by: [desc: w.wave_number],
+        limit: 1,
+        select: %{label: w.label}
+      )
+    )
   end
 end
