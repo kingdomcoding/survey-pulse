@@ -224,9 +224,9 @@ defmodule SurveyPulseWeb.SurveyLive do
                   </td>
                   <td class={[
                     "px-6 py-4 text-sm font-medium text-right",
-                    delta_color(point.delta)
+                    if(point.wave_number == 1, do: "text-gray-400", else: delta_color(point.delta))
                   ]}>
-                    {format_delta(point.delta)}
+                    {if point.wave_number == 1, do: "—", else: format_delta(point.delta)}
                   </td>
                   <td class="px-6 py-4 text-right">
                     <span
@@ -242,10 +242,16 @@ defmodule SurveyPulseWeb.SurveyLive do
                       {if point.delta > 0, do: "Significant ↑", else: "Significant ↓"}
                     </span>
                     <span
-                      :if={!point.significant?}
+                      :if={!point.significant? and point.wave_number == 1}
                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500"
                     >
-                      Stable
+                      Baseline
+                    </span>
+                    <span
+                      :if={!point.significant? and point.wave_number != 1}
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500"
+                    >
+                      No sig. change
                     </span>
                   </td>
                 </tr>
