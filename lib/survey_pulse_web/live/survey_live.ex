@@ -17,7 +17,9 @@ defmodule SurveyPulseWeb.SurveyLive do
        selected_question_id: nil,
        filters: %{age_group: "all", gender: "all", region: "all"},
        trend_data: [],
-       insight: nil
+       insight: nil,
+       breakdown_dimension: :age_group,
+       breakdown_data: []
      )}
   end
 
@@ -38,12 +40,27 @@ defmodule SurveyPulseWeb.SurveyLive do
     question = selected_question(survey.questions, question_id)
     insight = compute_insight(trend_data, question)
 
+    latest_wave = List.last(survey.waves)
+
+    breakdown_data =
+      if latest_wave && question_id do
+        SurveyPulse.Analytics.demographic_breakdown!(
+          survey.id,
+          question_id,
+          latest_wave.id,
+          socket.assigns.breakdown_dimension
+        )
+      else
+        []
+      end
+
     {:noreply,
      assign(socket,
        selected_question_id: question_id,
        filters: filters,
        trend_data: trend_data,
-       insight: insight
+       insight: insight,
+       breakdown_data: breakdown_data
      )}
   end
 
@@ -66,6 +83,26 @@ defmodule SurveyPulseWeb.SurveyLive do
     }
 
     {:noreply, push_patch(socket, to: ~p"/surveys/#{socket.assigns.survey.id}?#{query_params}")}
+  end
+
+  @impl true
+  def handle_event("change_dimension", %{"dimension" => dim}, socket) do
+    dimension = String.to_existing_atom(dim)
+    latest_wave = List.last(socket.assigns.survey.waves)
+
+    data =
+      if latest_wave do
+        SurveyPulse.Analytics.demographic_breakdown!(
+          socket.assigns.survey.id,
+          socket.assigns.selected_question_id,
+          latest_wave.id,
+          dimension
+        )
+      else
+        []
+      end
+
+    {:noreply, assign(socket, breakdown_dimension: dimension, breakdown_data: data)}
   end
 
   @impl true
@@ -187,6 +224,34 @@ defmodule SurveyPulseWeb.SurveyLive do
               class="h-80"
             />
           <% end %>
+        </div>
+
+        <div :if={@breakdown_data != []} class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Demographic Breakdown</h2>
+            <div class="flex gap-1">
+              <button
+                :for={dim <- [:age_group, :gender, :region]}
+                phx-click="change_dimension"
+                phx-value-dimension={dim}
+                class={[
+                  "px-3 py-1.5 text-xs rounded-lg transition-colors",
+                  if(@breakdown_dimension == dim,
+                    do: "bg-indigo-600 text-white",
+                    else: "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  )
+                ]}
+              >
+                {format_dimension(dim)}
+              </button>
+            </div>
+          </div>
+          <div
+            id="breakdown-chart"
+            phx-hook="BreakdownChart"
+            data-breakdown={Jason.encode!(Enum.map(@breakdown_data, &Map.from_struct/1))}
+            class="h-64"
+          />
         </div>
 
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -591,6 +656,10 @@ defmodule SurveyPulseWeb.SurveyLive do
       "region" => filters.region
     }
   end
+
+  defp format_dimension(:age_group), do: "Age"
+  defp format_dimension(:gender), do: "Gender"
+  defp format_dimension(:region), do: "Region"
 
   defp format_category(:brand_health), do: "Brand Health"
   defp format_category(:ad_testing), do: "Ad Testing"

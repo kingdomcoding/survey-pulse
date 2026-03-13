@@ -26,12 +26,13 @@ import {hooks as colocatedHooks} from "phoenix-colocated/survey_pulse"
 import topbar from "../vendor/topbar"
 import TrendChart from "./hooks/chart_hook"
 import SparkLine from "./hooks/spark_hook"
+import BreakdownChart from "./hooks/breakdown_hook"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, TrendChart, SparkLine},
+  hooks: {...colocatedHooks, TrendChart, SparkLine, BreakdownChart},
 })
 
 // Show progress bar on live navigation and form submits

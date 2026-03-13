@@ -12,6 +12,13 @@ defmodule SurveyPulse.Analytics do
       define(:wave_summary_filtered, action: :for_survey_filtered, args: [:survey_id, :filters])
     end
 
+    resource SurveyPulse.Analytics.Breakdown do
+      define(:demographic_breakdown,
+        action: :for_question,
+        args: [:survey_id, :question_id, :wave_id, :dimension]
+      )
+    end
+
     resource SurveyPulse.Analytics.Trend do
       define(:longitudinal_trend, action: :for_question, args: [:survey_id, :question_id])
 
