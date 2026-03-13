@@ -192,7 +192,17 @@ defmodule SurveyPulseWeb.SurveyLive do
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
             <h2 class="text-lg font-semibold text-gray-900">Round-by-Round Detail</h2>
-            <.filter_bar filters={@filters} available_filters={@available_filters} />
+            <div class="flex items-center gap-3">
+              <a
+                href={~p"/surveys/#{@survey.id}/export?#{export_params(@selected_question_id, @filters)}"}
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                download
+              >
+                <.icon name="hero-arrow-down-tray" class="h-3.5 w-3.5" />
+                CSV
+              </a>
+              <.filter_bar filters={@filters} available_filters={@available_filters} />
+            </div>
           </div>
           <.active_filters filters={@filters} />
           <.sample_warning total={total_filtered_responses(@trend_data)} />
@@ -567,6 +577,11 @@ defmodule SurveyPulseWeb.SurveyLive do
     end
   rescue
     _ -> %{age_groups: [], genders: [], regions: []}
+  end
+
+  defp export_params(question_id, filters) do
+    %{"question" => question_id}
+    |> Map.merge(filter_query_params(filters))
   end
 
   defp filter_query_params(filters) do
