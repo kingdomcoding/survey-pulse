@@ -117,19 +117,19 @@ defmodule SurveyPulseWeb.SurveyLive do
             phx-click="select_question"
             phx-value-question_id={q.id}
             class={[
-              "px-4 py-2 rounded-lg text-sm font-medium transition-colors flex flex-col items-start",
+              "px-4 py-2.5 rounded-lg text-sm transition-colors text-left min-w-0",
               if(q.id == @selected_question_id,
                 do: "bg-indigo-600 text-white shadow-sm",
                 else: "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
               )
             ]}
           >
-            <span class="font-semibold">{q.code}</span>
+            <span class="block font-medium truncate max-w-[240px]">{shorten_question(q.text)}</span>
             <span class={[
-              "text-xs mt-0.5 max-w-[180px] truncate",
+              "text-xs mt-0.5 block",
               if(q.id == @selected_question_id, do: "text-indigo-200", else: "text-gray-400")
             ]}>
-              {q.text}
+              {q.code}{if q.question_type == :nps, do: " · NPS", else: " · 1–#{q.scale_max}"}
             </span>
           </button>
         </div>
@@ -504,6 +504,10 @@ defmodule SurveyPulseWeb.SurveyLive do
         bot2_box: point.bot2_box
       }
     end)
+  end
+
+  defp shorten_question(text) do
+    if String.length(text) > 45, do: String.slice(text, 0, 42) <> "...", else: text
   end
 
   defp selected_question(questions, selected_id) do
