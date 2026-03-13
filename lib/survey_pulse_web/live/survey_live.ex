@@ -199,19 +199,19 @@ defmodule SurveyPulseWeb.SurveyLive do
                     Round
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    n
+                    Responses
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {if question_type(@survey.questions, @selected_question_id) == :nps,
-                      do: "NPS Score", else: "Avg"}
+                      do: "NPS Score", else: "Avg Score"}
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {if question_type(@survey.questions, @selected_question_id) == :nps,
-                      do: "Promoters", else: "Top 2 Box"}
+                      do: "Promoters", else: "Positive %"}
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {if question_type(@survey.questions, @selected_question_id) == :nps,
-                      do: "Detractors", else: "Bot 2 Box"}
+                      do: "Detractors", else: "Negative %"}
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Change
@@ -266,13 +266,13 @@ defmodule SurveyPulseWeb.SurveyLive do
                       :if={!point.significant? and point.wave_number == 1}
                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500"
                     >
-                      Baseline
+                      First round
                     </span>
                     <span
                       :if={!point.significant? and point.wave_number != 1}
                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500"
                     >
-                      No sig. change
+                      Stable
                     </span>
                   </td>
                 </tr>
