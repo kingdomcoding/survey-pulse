@@ -64,14 +64,26 @@ const TrendChart = {
             padding: 12,
             cornerRadius: 8,
             callbacks: {
+              label(ctx) {
+                return `Score: ${data[ctx.dataIndex].avg_score}`
+              },
               afterLabel(ctx) {
                 const point = data[ctx.dataIndex]
-                const delta = point.delta
-                const sig = point.significant
-                let str = `Change: ${delta > 0 ? "+" : ""}${delta.toFixed(2)}`
-                if (sig) str += " ★ Significant"
-                str += `\nResponses: ${point.response_count.toLocaleString()}`
-                return str
+                const lines = []
+                if (point.wave_number > 1) {
+                  const delta = point.delta
+                  const dir = delta > 0 ? "Up" : delta < 0 ? "Down" : "No change"
+                  if (dir === "No change") {
+                    lines.push("No change from previous round")
+                  } else {
+                    lines.push(`${dir} ${Math.abs(delta).toFixed(2)} pts from previous round`)
+                  }
+                  if (point.significant) lines.push("Statistically significant")
+                } else {
+                  lines.push("First round (baseline)")
+                }
+                lines.push(`${point.response_count.toLocaleString()} responses`)
+                return lines
               }
             }
           }
