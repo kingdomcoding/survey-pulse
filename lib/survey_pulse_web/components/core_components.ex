@@ -55,26 +55,26 @@ defmodule SurveyPulseWeb.CoreComponents do
       :if={msg = render_slot(@inner_block) || Phoenix.Flash.get(@flash, @kind)}
       id={@id}
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
+      phx-mounted={@kind == :info && JS.transition({"opacity-100", "opacity-100", "opacity-0"}, time: 3000) |> hide("##{@id}") |> JS.push("lv:clear-flash", value: %{key: @kind})}
       role="alert"
-      class="toast toast-top toast-end z-50"
+      class={[
+        "fixed top-4 left-1/2 -translate-x-1/2 z-50 w-auto max-w-md",
+        "flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm cursor-pointer",
+        "animate-in",
+        @kind == :info && "bg-white border-emerald-200 text-emerald-800",
+        @kind == :error && "bg-white border-red-200 text-red-800"
+      ]}
       {@rest}
     >
-      <div class={[
-        "alert w-80 sm:w-96 max-w-80 sm:max-w-96 text-wrap",
-        @kind == :info && "alert-info",
-        @kind == :error && "alert-error"
-      ]}>
-        <.icon :if={@kind == :info} name="hero-information-circle" class="size-5 shrink-0" />
-        <.icon :if={@kind == :error} name="hero-exclamation-circle" class="size-5 shrink-0" />
-        <div>
-          <p :if={@title} class="font-semibold">{@title}</p>
-          <p>{msg}</p>
-        </div>
-        <div class="flex-1" />
-        <button type="button" class="group self-start cursor-pointer" aria-label="close">
-          <.icon name="hero-x-mark" class="size-5 opacity-40 group-hover:opacity-70" />
-        </button>
+      <.icon :if={@kind == :info} name="hero-check-circle" class="size-5 shrink-0 text-emerald-500" />
+      <.icon :if={@kind == :error} name="hero-exclamation-circle" class="size-5 shrink-0 text-red-500" />
+      <div>
+        <p :if={@title} class="font-semibold">{@title}</p>
+        <p>{msg}</p>
       </div>
+      <button type="button" class="group self-start cursor-pointer" aria-label="close">
+        <.icon name="hero-x-mark" class="size-4 opacity-40 group-hover:opacity-70 shrink-0" />
+      </button>
     </div>
     """
   end
