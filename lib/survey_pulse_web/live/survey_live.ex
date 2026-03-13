@@ -16,7 +16,8 @@ defmodule SurveyPulseWeb.SurveyLive do
        available_filters: load_available_filters(survey.id),
        selected_question_id: nil,
        filters: %{age_group: "all", gender: "all", region: "all"},
-       trend_data: []
+       trend_data: [],
+       insight: nil
      )}
   end
 
@@ -34,12 +35,15 @@ defmodule SurveyPulseWeb.SurveyLive do
     }
 
     trend_data = load_trend_data(survey.id, question_id, filters)
+    question = selected_question(survey.questions, question_id)
+    insight = compute_insight(trend_data, question)
 
     {:noreply,
      assign(socket,
        selected_question_id: question_id,
        filters: filters,
-       trend_data: trend_data
+       trend_data: trend_data,
+       insight: insight
      )}
   end
 
@@ -104,7 +108,8 @@ defmodule SurveyPulseWeb.SurveyLive do
         </div>
       </header>
 
-      <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      <main class="max-w-7xl mx-auto px-6 py-8 space-y-6">
+        <.key_insight insight={@insight} />
         <.filter_bar filters={@filters} available_filters={@available_filters} />
         <.active_filters filters={@filters} />
         <.sample_warning total={total_filtered_responses(@trend_data)} />
@@ -388,6 +393,66 @@ defmodule SurveyPulseWeb.SurveyLive do
       <span>Small sample size ({@total} responses). Results may not be statistically reliable.</span>
     </div>
     """
+  end
+
+  defp key_insight(assigns) do
+    ~H"""
+    <div :if={@insight} class={[
+      "flex items-start gap-3 px-5 py-4 rounded-xl border",
+      insight_style(@insight.type)
+    ]}>
+      <.icon name={insight_icon(@insight.type)} class="h-5 w-5 mt-0.5 shrink-0" />
+      <div>
+        <p class="text-sm font-semibold">{@insight.headline}</p>
+        <p class="text-sm mt-0.5 opacity-80">{@insight.detail}</p>
+      </div>
+    </div>
+    """
+  end
+
+  defp insight_style(:positive), do: "bg-emerald-50 border-emerald-200 text-emerald-800"
+  defp insight_style(:negative), do: "bg-red-50 border-red-200 text-red-800"
+  defp insight_style(_), do: "bg-gray-50 border-gray-200 text-gray-700"
+
+  defp insight_icon(:positive), do: "hero-arrow-trending-up"
+  defp insight_icon(:negative), do: "hero-arrow-trending-down"
+  defp insight_icon(_), do: "hero-minus"
+
+  defp compute_insight([], _question), do: nil
+  defp compute_insight(_trend_data, nil), do: nil
+
+  defp compute_insight(trend_data, question) do
+    latest = List.last(trend_data)
+
+    cond do
+      latest.wave_number == 1 ->
+        %{
+          type: :neutral,
+          headline: "First round collected",
+          detail: "#{format_number(latest.response_count)} responses recorded. Future rounds will be compared against this baseline."
+        }
+
+      latest.significant? and latest.delta > 0 ->
+        %{
+          type: :positive,
+          headline: "#{question.text} improved significantly",
+          detail: "Up #{format_delta(latest.delta)} points from the previous round (#{format_number(latest.response_count)} responses, statistically significant)."
+        }
+
+      latest.significant? and latest.delta < 0 ->
+        %{
+          type: :negative,
+          headline: "#{question.text} declined significantly",
+          detail: "Down #{format_delta(abs(latest.delta))} points from the previous round (#{format_number(latest.response_count)} responses, statistically significant)."
+        }
+
+      true ->
+        %{
+          type: :neutral,
+          headline: "No significant change detected",
+          detail: "Score moved #{format_delta(latest.delta)} points — within normal variation (#{format_number(latest.response_count)} responses)."
+        }
+    end
   end
 
   defp any_filter_active?(filters) do
