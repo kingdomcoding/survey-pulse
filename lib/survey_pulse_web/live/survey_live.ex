@@ -92,14 +92,9 @@ defmodule SurveyPulseWeb.SurveyLive do
   end
 
   @impl true
-  def handle_event("set_pattern", %{"pattern" => pattern}, socket) do
-    {:noreply, assign(socket, sample_pattern: pattern)}
-  end
-
-  @impl true
-  def handle_event("generate_sample_data", _params, socket) do
-    send(self(), {:do_generate, socket.assigns.sample_pattern})
-    {:noreply, assign(socket, generating: true)}
+  def handle_event("generate_sample_data", %{"pattern" => pattern}, socket) do
+    send(self(), {:do_generate, pattern})
+    {:noreply, assign(socket, generating: true, sample_pattern: pattern)}
   end
 
   @impl true
@@ -194,35 +189,42 @@ defmodule SurveyPulseWeb.SurveyLive do
       </header>
 
       <main class="max-w-7xl mx-auto px-6 py-8 space-y-6 animate-in">
-        <div :if={@survey.waves == []} class="bg-white rounded-xl border border-gray-200 p-8 shadow-sm text-center">
-          <.icon name="hero-beaker" class="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <h3 class="text-lg font-semibold text-gray-900 mb-1">No data yet</h3>
-          <p class="text-sm text-gray-500 mb-4">Generate realistic sample responses to see this survey in action.</p>
-          <div class="flex items-center justify-center gap-3">
-            <button
-              phx-click="generate_sample_data"
-              disabled={@generating}
-              class={[
-                "px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg",
-                "hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-wait",
-                "inline-flex items-center gap-2"
-              ]}
-            >
-              <svg :if={@generating} class="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              {if @generating, do: "Generating…", else: "Generate Sample Data"}
-            </button>
-            <select
-              name="pattern"
-              phx-change="set_pattern"
-              class="rounded-lg border-gray-300 text-sm"
-            >
-              <option value="steady_growth" selected={@sample_pattern == "steady_growth"}>Steady Growth</option>
-              <option value="campaign_spike" selected={@sample_pattern == "campaign_spike"}>Campaign Spike</option>
-              <option value="iteration_improvement" selected={@sample_pattern == "iteration_improvement"}>Iterative Improvement</option>
-            </select>
+        <div :if={@survey.waves == []} class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="px-8 pt-10 pb-6 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-50 mb-4">
+              <.icon name="hero-chart-bar" class="h-8 w-8 text-indigo-400" />
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-1">Ready to see this survey in action?</h3>
+            <p class="text-sm text-gray-500 max-w-sm mx-auto">
+              Generate realistic sample data to explore trends, breakdowns, and round-by-round analysis.
+            </p>
+          </div>
+          <div class="px-8 pb-8">
+            <div class="grid grid-cols-3 gap-3">
+              <button
+                :for={{pattern, label, desc, icon} <- sample_patterns()}
+                phx-click="generate_sample_data"
+                phx-value-pattern={pattern}
+                disabled={@generating}
+                class={[
+                  "relative text-left p-4 rounded-xl border-2 transition-all",
+                  "hover:border-indigo-300 hover:bg-indigo-50/50",
+                  "disabled:opacity-60 disabled:cursor-wait",
+                  if(@generating && @sample_pattern == pattern,
+                    do: "border-indigo-400 bg-indigo-50",
+                    else: "border-gray-200 bg-white"
+                  )
+                ]}
+              >
+                <.icon name={icon} class="h-5 w-5 text-indigo-500 mb-2" />
+                <span class="block text-sm font-medium text-gray-900">{label}</span>
+                <span class="block text-xs text-gray-500 mt-0.5">{desc}</span>
+                <svg :if={@generating && @sample_pattern == pattern} class="absolute top-3 right-3 animate-spin h-4 w-4 text-indigo-500" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -779,6 +781,14 @@ defmodule SurveyPulseWeb.SurveyLive do
     sel = selected_question(questions, selected_id)
     cand = selected_question(questions, candidate_id)
     sel && cand && sel.question_type == cand.question_type
+  end
+
+  defp sample_patterns do
+    [
+      {"steady_growth", "Steady Growth", "Gradual upward trend", "hero-arrow-trending-up"},
+      {"campaign_spike", "Campaign Spike", "Sharp mid-point surge", "hero-bolt"},
+      {"iteration_improvement", "Iterative Improvement", "Step-by-step gains", "hero-arrow-path"}
+    ]
   end
 
   defp format_dimension(:age_group), do: "Age"
