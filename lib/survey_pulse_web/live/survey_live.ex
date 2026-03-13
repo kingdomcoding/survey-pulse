@@ -19,7 +19,9 @@ defmodule SurveyPulseWeb.SurveyLive do
        trend_data: [],
        insight: nil,
        breakdown_dimension: :age_group,
-       breakdown_data: []
+       breakdown_data: [],
+       compare_question_id: nil,
+       compare_trend_data: []
      )}
   end
 
@@ -60,7 +62,9 @@ defmodule SurveyPulseWeb.SurveyLive do
        filters: filters,
        trend_data: trend_data,
        insight: insight,
-       breakdown_data: breakdown_data
+       breakdown_data: breakdown_data,
+       compare_question_id: nil,
+       compare_trend_data: []
      )}
   end
 
@@ -83,6 +87,16 @@ defmodule SurveyPulseWeb.SurveyLive do
     }
 
     {:noreply, push_patch(socket, to: ~p"/surveys/#{socket.assigns.survey.id}?#{query_params}")}
+  end
+
+  @impl true
+  def handle_event("toggle_compare", %{"question_id" => qid}, socket) do
+    if socket.assigns.compare_question_id == qid do
+      {:noreply, assign(socket, compare_question_id: nil, compare_trend_data: [])}
+    else
+      data = load_trend_data(socket.assigns.survey.id, qid, socket.assigns.filters)
+      {:noreply, assign(socket, compare_question_id: qid, compare_trend_data: data)}
+    end
   end
 
   @impl true
@@ -149,26 +163,41 @@ defmodule SurveyPulseWeb.SurveyLive do
         <.key_insight insight={@insight} />
 
         <div class="flex gap-2 overflow-x-auto pb-1">
-          <button
-            :for={q <- @survey.questions}
-            phx-click="select_question"
-            phx-value-question_id={q.id}
-            class={[
-              "px-4 py-2.5 rounded-lg text-sm transition-colors text-left min-w-0",
-              if(q.id == @selected_question_id,
-                do: "bg-indigo-600 text-white shadow-sm",
-                else: "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
-              )
-            ]}
-          >
-            <span class="block font-medium truncate max-w-[240px]">{shorten_question(q.text)}</span>
-            <span class={[
-              "text-xs mt-0.5 block",
-              if(q.id == @selected_question_id, do: "text-indigo-200", else: "text-gray-400")
-            ]}>
-              {q.code}{if q.question_type == :nps, do: " · NPS", else: " · 1–#{q.scale_max}"}
-            </span>
-          </button>
+          <div :for={q <- @survey.questions} class="flex items-center gap-1 shrink-0">
+            <button
+              phx-click="select_question"
+              phx-value-question_id={q.id}
+              class={[
+                "px-4 py-2.5 rounded-lg text-sm transition-colors text-left min-w-0",
+                if(q.id == @selected_question_id,
+                  do: "bg-indigo-600 text-white shadow-sm",
+                  else: "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
+                )
+              ]}
+            >
+              <span class="block font-medium truncate max-w-[240px]">{shorten_question(q.text)}</span>
+              <span class={[
+                "text-xs mt-0.5 block",
+                if(q.id == @selected_question_id, do: "text-indigo-200", else: "text-gray-400")
+              ]}>
+                {q.code}{if q.question_type == :nps, do: " · NPS", else: " · 1–#{q.scale_max}"}
+              </span>
+            </button>
+            <button
+              :if={q.id != @selected_question_id && comparable?(@survey.questions, @selected_question_id, q.id)}
+              phx-click="toggle_compare"
+              phx-value-question_id={q.id}
+              class={[
+                "text-xs px-1.5 py-0.5 rounded transition-colors",
+                if(@compare_question_id == q.id,
+                  do: "bg-amber-500 text-white",
+                  else: "bg-gray-200 text-gray-500 hover:bg-gray-300"
+                )
+              ]}
+            >
+              {if @compare_question_id == q.id, do: "✕", else: "Compare"}
+            </button>
+          </div>
         </div>
 
         <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
@@ -218,6 +247,9 @@ defmodule SurveyPulseWeb.SurveyLive do
               id="trend-chart"
               phx-hook="TrendChart"
               data-trend={Jason.encode!(trend_data_for_chart(@trend_data))}
+              data-compare={if @compare_trend_data != [], do: Jason.encode!(trend_data_for_chart(@compare_trend_data)), else: ""}
+              data-primary-label={selected_question(@survey.questions, @selected_question_id) |> then(& &1 && &1.code)}
+              data-compare-label={selected_question(@survey.questions, @compare_question_id) |> then(& &1 && &1.code)}
               data-scale-min={scale_min(@survey.questions, @selected_question_id)}
               data-scale-max={scale_max(@survey.questions, @selected_question_id)}
               data-question-type={question_type(@survey.questions, @selected_question_id)}
@@ -655,6 +687,12 @@ defmodule SurveyPulseWeb.SurveyLive do
       "gender" => filters.gender,
       "region" => filters.region
     }
+  end
+
+  defp comparable?(questions, selected_id, candidate_id) do
+    sel = selected_question(questions, selected_id)
+    cand = selected_question(questions, candidate_id)
+    sel && cand && sel.question_type == cand.question_type
   end
 
   defp format_dimension(:age_group), do: "Age"
