@@ -67,10 +67,10 @@ defmodule SurveyPulseWeb.DashboardLive do
     ~H"""
     <.link navigate={~p"/surveys/#{@survey.id}"} class="group block">
       <div class={[
-        "bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md hover:border-gray-300 transition-all",
+        "bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md hover:border-gray-300 transition-all",
         card_accent(@metrics)
       ]}>
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-3">
           <span class={[
             "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
             category_color(@survey.category)
@@ -80,56 +80,25 @@ defmodule SurveyPulseWeb.DashboardLive do
           <span class="text-xs text-gray-400">{@survey.wave_count} rounds</span>
         </div>
 
-        <h2 class="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors mb-1">
+        <h2 class="text-base font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors mb-2">
           {@survey.name}
         </h2>
-        <p class="text-sm text-gray-500 line-clamp-2 mb-4">{@survey.description}</p>
 
-        <div class="pt-4 border-t border-gray-100">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-baseline gap-2">
-              <span class="text-2xl font-bold text-gray-900">
-                {format_score(Map.get(@metrics, :latest_score, 0.0))}
-              </span>
-              <span class="text-xs text-gray-400">
-                {Map.get(@metrics, :sparkline_question_code, "")}
-              </span>
-            </div>
-            <span class={[
-              "inline-flex items-center text-sm font-medium px-2 py-0.5 rounded-full",
-              delta_badge_class(@metrics)
-            ]}>
-              {format_delta_badge(Map.get(@metrics, :latest_delta, 0.0))}
-            </span>
-          </div>
-          <div class="flex items-center gap-2 mb-3">
-            <span class={[
-              "inline-flex w-2 h-2 rounded-full shrink-0",
-              insight_dot_color(@metrics)
-            ]} />
-            <p class="text-sm text-gray-600">
-              {topline_insight(@metrics)}
-            </p>
-          </div>
-          <div class="flex items-center justify-between text-xs text-gray-400">
-            <span>
-              {format_number(Map.get(@metrics, :total_respondents, 0))} respondents · {@survey.wave_count} rounds
-            </span>
-            <span>Latest: {Map.get(@metrics, :latest_wave_label, "—")}</span>
-          </div>
-        </div>
+        <p class="text-sm text-gray-600 mb-3">
+          {topline_insight(@metrics)}
+        </p>
 
-        <div class="pt-3 mt-3 border-t border-gray-100">
-          <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-1">
-            {Map.get(@metrics, :sparkline_question_code, "")} trend across rounds
-          </p>
-          <div
-            id={"spark-#{@survey.id}"}
-            phx-hook="SparkLine"
-            data-scores={Jason.encode!(Map.get(@metrics, :wave_scores, []))}
-            data-color={sparkline_color(@survey.category)}
-            class="h-10"
-          />
+        <div
+          id={"spark-#{@survey.id}"}
+          phx-hook="SparkLine"
+          data-scores={Jason.encode!(Map.get(@metrics, :wave_scores, []))}
+          data-color={sparkline_color(@survey.category)}
+          class="h-10 mb-3"
+        />
+
+        <div class="flex items-center justify-between text-xs text-gray-400">
+          <span>{format_number(Map.get(@metrics, :total_respondents, 0))} respondents</span>
+          <span>Latest: {Map.get(@metrics, :latest_wave_label, "—")}</span>
         </div>
       </div>
     </.link>
@@ -138,27 +107,20 @@ defmodule SurveyPulseWeb.DashboardLive do
 
   defp topline_insight(metrics) do
     delta = Map.get(metrics, :latest_delta, 0.0)
-    code = Map.get(metrics, :sparkline_question_code, "")
+    score = Map.get(metrics, :latest_score, 0.0)
 
     cond do
+      score == 0.0 ->
+        "No data available yet"
+
       delta > 0.2 ->
-        "#{code} trending up — improved #{format_delta(delta)} pts last round"
+        "Trending up #{format_delta(delta)} pts last round"
 
       delta < -0.2 ->
-        "#{code} needs attention — dropped #{format_delta(abs(delta))} pts last round"
+        "Down #{Float.round(abs(delta), 2)} pts — needs attention"
 
       true ->
-        "#{code} holding steady across recent rounds"
-    end
-  end
-
-  defp insight_dot_color(metrics) do
-    delta = Map.get(metrics, :latest_delta, 0.0)
-
-    cond do
-      delta > 0.2 -> "bg-emerald-500"
-      delta < -0.2 -> "bg-red-500"
-      true -> "bg-gray-400"
+        "Holding steady across recent rounds"
     end
   end
 
@@ -176,27 +138,6 @@ defmodule SurveyPulseWeb.DashboardLive do
   defp format_delta(delta) when is_float(delta) and delta < 0, do: "#{Float.round(delta, 2)}"
   defp format_delta(delta) when is_float(delta), do: "#{Float.round(delta, 2)}"
   defp format_delta(_), do: "—"
-
-  defp format_score(score) when is_number(score) and score > 0, do: Float.round(score / 1, 2)
-  defp format_score(_), do: "—"
-
-  defp delta_badge_class(metrics) do
-    delta = Map.get(metrics, :latest_delta, 0.0)
-
-    cond do
-      delta > 0.2 -> "bg-emerald-50 text-emerald-700"
-      delta < -0.2 -> "bg-red-50 text-red-700"
-      true -> "bg-gray-100 text-gray-500"
-    end
-  end
-
-  defp format_delta_badge(delta) when is_float(delta) and delta > 0,
-    do: "+#{Float.round(delta, 2)}"
-
-  defp format_delta_badge(delta) when is_float(delta) and delta < 0,
-    do: "#{Float.round(delta, 2)}"
-
-  defp format_delta_badge(_), do: "—"
 
   defp sparkline_color(:brand_health), do: "#3b82f6"
   defp sparkline_color(:ad_testing), do: "#8b5cf6"
