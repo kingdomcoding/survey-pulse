@@ -135,7 +135,7 @@ defmodule SurveyPulseWeb.SurveyLive do
         <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div class="flex items-start justify-between mb-6">
             <div>
-              <h2 class="text-lg font-semibold text-gray-900 mb-1">Wave-over-Wave Trend</h2>
+              <h2 class="text-lg font-semibold text-gray-900 mb-1">Score Over Time</h2>
               <p class="text-sm text-gray-500">
                 {selected_question_text(@survey.questions, @selected_question_id)}
               </p>
@@ -189,14 +189,14 @@ defmodule SurveyPulseWeb.SurveyLive do
 
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-100">
-            <h2 class="text-lg font-semibold text-gray-900">Wave Detail</h2>
+            <h2 class="text-lg font-semibold text-gray-900">Round-by-Round Detail</h2>
           </div>
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Wave
+                    Round
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     n
@@ -224,7 +224,7 @@ defmodule SurveyPulseWeb.SurveyLive do
               <tbody class="bg-white divide-y divide-gray-100">
                 <tr :if={@trend_data == []}>
                   <td colspan="7" class="px-6 py-12 text-center text-sm text-gray-500">
-                    No wave data available
+                    No data available
                   </td>
                 </tr>
                 <tr :for={point <- @trend_data} class="hover:bg-gray-50">

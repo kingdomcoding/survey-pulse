@@ -221,6 +221,6 @@ defmodule SurveyPulse.Seeds do
 
   defp format_wave_label(wave_num, datetime) do
     month = Calendar.strftime(datetime, "%b %Y")
-    "W#{wave_num} · #{month}"
+    "R#{wave_num} · #{month}"
   end
 end

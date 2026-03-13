@@ -37,8 +37,8 @@ defmodule SurveyPulseWeb.SurveyLiveTest do
     assert html =~ survey.name
     assert html =~ survey.description
     assert html =~ "Ad Testing"
-    assert html =~ "Wave-over-Wave Trend"
-    assert html =~ "Wave Detail"
+    assert html =~ "Score Over Time"
+    assert html =~ "Round-by-Round Detail"
   end
 
   test "shows question tabs", %{conn: conn, survey: survey, question: question} do

@@ -68,7 +68,7 @@ defmodule SurveyPulseWeb.DashboardLive do
           ]}>
             {format_category(@survey.category)}
           </span>
-          <span class="text-xs text-gray-400">{@survey.wave_count} waves</span>
+          <span class="text-xs text-gray-400">{@survey.wave_count} rounds</span>
         </div>
 
         <h2 class="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors mb-1">
@@ -82,10 +82,10 @@ defmodule SurveyPulseWeb.DashboardLive do
             <p class="text-lg font-semibold text-gray-900 mt-0.5">
               {format_number(Map.get(@metrics, :total_respondents, 0))}
             </p>
-            <p class="text-xs text-gray-400 mt-0.5">across {@survey.wave_count} waves</p>
+            <p class="text-xs text-gray-400 mt-0.5">across {@survey.wave_count} rounds</p>
           </div>
           <div>
-            <p class="text-xs text-gray-400 uppercase tracking-wide">Latest Wave</p>
+            <p class="text-xs text-gray-400 uppercase tracking-wide">Latest Round</p>
             <p class="text-lg font-semibold text-gray-900 mt-0.5">
               {Map.get(@metrics, :latest_wave_label, "—")}
             </p>
@@ -97,7 +97,7 @@ defmodule SurveyPulseWeb.DashboardLive do
             <p class="text-xs text-gray-400 uppercase tracking-wide">Trend</p>
             <.trend_indicator delta={Map.get(@metrics, :latest_delta, 0)} />
             <p class="text-xs text-gray-400 mt-0.5">
-              {Map.get(@metrics, :sparkline_question_code, "")} vs prev wave
+              {Map.get(@metrics, :sparkline_question_code, "")} vs prev round
             </p>
           </div>
         </div>
