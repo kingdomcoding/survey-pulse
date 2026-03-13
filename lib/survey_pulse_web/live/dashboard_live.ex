@@ -60,7 +60,10 @@ defmodule SurveyPulseWeb.DashboardLive do
   defp survey_card(assigns) do
     ~H"""
     <.link navigate={~p"/surveys/#{@survey.id}"} class="group block">
-      <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md hover:border-gray-300 transition-all">
+      <div class={[
+        "bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md hover:border-gray-300 transition-all",
+        card_accent(@metrics)
+      ]}>
         <div class="flex items-center justify-between mb-4">
           <span class={[
             "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
@@ -74,35 +77,30 @@ defmodule SurveyPulseWeb.DashboardLive do
         <h2 class="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors mb-1">
           {@survey.name}
         </h2>
-        <p class="text-sm text-gray-500 line-clamp-2 mb-5">{@survey.description}</p>
+        <p class="text-sm text-gray-500 line-clamp-2 mb-4">{@survey.description}</p>
 
-        <div class="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
-          <div>
-            <p class="text-xs text-gray-400 uppercase tracking-wide">Respondents</p>
-            <p class="text-lg font-semibold text-gray-900 mt-0.5">
-              {format_number(Map.get(@metrics, :total_respondents, 0))}
-            </p>
-            <p class="text-xs text-gray-400 mt-0.5">across {@survey.wave_count} rounds</p>
-          </div>
-          <div>
-            <p class="text-xs text-gray-400 uppercase tracking-wide">Latest Round</p>
-            <p class="text-lg font-semibold text-gray-900 mt-0.5">
-              {Map.get(@metrics, :latest_wave_label, "—")}
-            </p>
-            <p class="text-xs text-gray-400 mt-0.5">
-              {format_number(Map.get(@metrics, :latest_wave_responses, 0))} respondents
+        <div class="pt-4 border-t border-gray-100">
+          <div class="flex items-center gap-2 mb-3">
+            <span class={[
+              "inline-flex w-2 h-2 rounded-full shrink-0",
+              insight_dot_color(@metrics)
+            ]} />
+            <p class="text-sm font-medium text-gray-700">
+              {topline_insight(@metrics)}
             </p>
           </div>
-          <div>
-            <p class="text-xs text-gray-400 uppercase tracking-wide">Trend</p>
-            <.trend_indicator delta={Map.get(@metrics, :latest_delta, 0)} />
-            <p class="text-xs text-gray-400 mt-0.5">
-              {Map.get(@metrics, :sparkline_question_code, "")} vs prev round
-            </p>
+          <div class="flex items-center justify-between text-xs text-gray-400">
+            <span>
+              {format_number(Map.get(@metrics, :total_respondents, 0))} respondents · {@survey.wave_count} rounds
+            </span>
+            <span>Latest: {Map.get(@metrics, :latest_wave_label, "—")}</span>
           </div>
         </div>
 
-        <div class="pt-3 mt-4 border-t border-gray-100">
+        <div class="pt-3 mt-3 border-t border-gray-100">
+          <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-1">
+            {Map.get(@metrics, :sparkline_question_code, "")} trend across rounds
+          </p>
           <div
             id={"spark-#{@survey.id}"}
             phx-hook="SparkLine"
@@ -115,24 +113,46 @@ defmodule SurveyPulseWeb.DashboardLive do
     """
   end
 
-  defp trend_indicator(assigns) do
-    ~H"""
-    <p class={[
-      "text-lg font-semibold mt-0.5",
-      delta_color(@delta)
-    ]}>
-      {format_trend(@delta)}
-    </p>
-    """
+  defp topline_insight(metrics) do
+    delta = Map.get(metrics, :latest_delta, 0.0)
+    code = Map.get(metrics, :sparkline_question_code, "")
+
+    cond do
+      delta > 0.3 ->
+        "#{code} trending up — improved #{format_delta(delta)} pts last round"
+
+      delta < -0.3 ->
+        "#{code} needs attention — dropped #{format_delta(abs(delta))} pts last round"
+
+      true ->
+        "#{code} holding steady across recent rounds"
+    end
   end
 
-  defp delta_color(delta) when delta > 0, do: "text-emerald-600"
-  defp delta_color(delta) when delta < 0, do: "text-red-600"
-  defp delta_color(_), do: "text-gray-400"
+  defp insight_dot_color(metrics) do
+    delta = Map.get(metrics, :latest_delta, 0.0)
 
-  defp format_trend(delta) when is_float(delta) and delta > 0, do: "+#{Float.round(delta, 2)}"
-  defp format_trend(delta) when is_float(delta) and delta < 0, do: "#{Float.round(delta, 2)}"
-  defp format_trend(_), do: "—"
+    cond do
+      delta > 0.3 -> "bg-emerald-500"
+      delta < -0.3 -> "bg-red-500"
+      true -> "bg-gray-400"
+    end
+  end
+
+  defp card_accent(metrics) do
+    delta = Map.get(metrics, :latest_delta, 0.0)
+
+    cond do
+      delta > 0.3 -> "border-l-4 border-l-emerald-400"
+      delta < -0.3 -> "border-l-4 border-l-red-400"
+      true -> ""
+    end
+  end
+
+  defp format_delta(delta) when is_float(delta) and delta > 0, do: "+#{Float.round(delta, 2)}"
+  defp format_delta(delta) when is_float(delta) and delta < 0, do: "#{Float.round(delta, 2)}"
+  defp format_delta(delta) when is_float(delta), do: "#{Float.round(delta, 2)}"
+  defp format_delta(_), do: "—"
 
   defp category_color(:brand_health), do: "bg-blue-100 text-blue-700"
   defp category_color(:ad_testing), do: "bg-purple-100 text-purple-700"
