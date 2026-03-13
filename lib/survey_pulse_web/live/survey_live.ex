@@ -119,13 +119,14 @@ defmodule SurveyPulseWeb.SurveyLive do
   end
 
   @impl true
+  def handle_event("toggle_compare", %{"question_id" => ""}, socket) do
+    {:noreply, assign(socket, compare_question_id: nil, compare_trend_data: [])}
+  end
+
+  @impl true
   def handle_event("toggle_compare", %{"question_id" => qid}, socket) do
-    if socket.assigns.compare_question_id == qid do
-      {:noreply, assign(socket, compare_question_id: nil, compare_trend_data: [])}
-    else
-      data = load_trend_data(socket.assigns.survey.id, qid, socket.assigns.filters)
-      {:noreply, assign(socket, compare_question_id: qid, compare_trend_data: data)}
-    end
+    data = load_trend_data(socket.assigns.survey.id, qid, socket.assigns.filters)
+    {:noreply, assign(socket, compare_question_id: qid, compare_trend_data: data)}
   end
 
   @impl true
@@ -232,13 +233,13 @@ defmodule SurveyPulseWeb.SurveyLive do
 
         <div :if={@survey.waves != []} class="relative">
           <div class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none z-10" />
-        <div class="flex gap-2 overflow-x-auto pb-1 scroll-smooth">
-          <div :for={q <- @survey.questions} class="flex items-center gap-1 shrink-0">
+          <div class="flex gap-2 overflow-x-auto pb-1 scroll-smooth">
             <button
+              :for={q <- @survey.questions}
               phx-click="select_question"
               phx-value-question_id={q.id}
               class={[
-                "px-4 py-2.5 rounded-lg text-sm transition-colors text-left min-w-0",
+                "px-4 py-2.5 rounded-lg text-sm transition-colors text-left min-w-0 shrink-0",
                 "phx-click-loading:opacity-70 phx-click-loading:cursor-wait",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
                 if(q.id == @selected_question_id,
@@ -255,22 +256,7 @@ defmodule SurveyPulseWeb.SurveyLive do
                 {q.code}{if q.question_type == :nps, do: " · NPS", else: " · 1–#{q.scale_max}"}
               </span>
             </button>
-            <button
-              :if={q.id != @selected_question_id && comparable?(@survey.questions, @selected_question_id, q.id)}
-              phx-click="toggle_compare"
-              phx-value-question_id={q.id}
-              class={[
-                "text-xs px-1.5 py-0.5 rounded transition-colors",
-                if(@compare_question_id == q.id,
-                  do: "bg-amber-500 text-white",
-                  else: "bg-gray-200 text-gray-500 hover:bg-gray-300"
-                )
-              ]}
-            >
-              {if @compare_question_id == q.id, do: "✕", else: "Compare"}
-            </button>
           </div>
-        </div>
         </div>
 
         <div :if={@survey.waves != []} class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
@@ -281,12 +267,35 @@ defmodule SurveyPulseWeb.SurveyLive do
                 {selected_question_text(@survey.questions, @selected_question_id)}
               </p>
             </div>
-            <span class={[
-              "inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium shrink-0",
-              scale_badge_color(selected_question(@survey.questions, @selected_question_id))
-            ]}>
-              {scale_label(selected_question(@survey.questions, @selected_question_id))}
-            </span>
+            <div class="flex items-center gap-2">
+              <form :if={comparable_questions(@survey.questions, @selected_question_id) != []} phx-change="toggle_compare">
+                <select
+                  name="question_id"
+                  class={[
+                    "text-xs rounded-lg border py-1.5 pl-2.5 pr-7 transition-colors cursor-pointer",
+                    if(@compare_question_id,
+                      do: "border-amber-300 bg-amber-50 text-amber-800",
+                      else: "border-gray-300 text-gray-500"
+                    )
+                  ]}
+                >
+                  <option value="">Compare with…</option>
+                  <option
+                    :for={q <- comparable_questions(@survey.questions, @selected_question_id)}
+                    value={q.id}
+                    selected={@compare_question_id == q.id}
+                  >
+                    {q.code} — {shorten_question(q.text)}
+                  </option>
+                </select>
+              </form>
+              <span class={[
+                "inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium shrink-0",
+                scale_badge_color(selected_question(@survey.questions, @selected_question_id))
+              ]}>
+                {scale_label(selected_question(@survey.questions, @selected_question_id))}
+              </span>
+            </div>
           </div>
           <%= if @trend_data == [] do %>
             <div class="h-80 flex items-center justify-center">
@@ -777,10 +786,14 @@ defmodule SurveyPulseWeb.SurveyLive do
     }
   end
 
-  defp comparable?(questions, selected_id, candidate_id) do
+  defp comparable_questions(questions, selected_id) do
     sel = selected_question(questions, selected_id)
-    cand = selected_question(questions, candidate_id)
-    sel && cand && sel.question_type == cand.question_type
+
+    if sel do
+      Enum.filter(questions, &(&1.id != selected_id && &1.question_type == sel.question_type))
+    else
+      []
+    end
   end
 
   defp sample_patterns do
