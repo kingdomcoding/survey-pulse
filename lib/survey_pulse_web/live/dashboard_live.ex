@@ -43,9 +43,18 @@ defmodule SurveyPulseWeb.DashboardLive do
               <h1 class="text-2xl font-semibold text-gray-900">SurveyPulse</h1>
               <p class="text-sm text-gray-500 mt-0.5">Track how consumer perceptions change across survey rounds</p>
             </div>
-            <span class="text-xs text-gray-400">
-              {length(@surveys)} surveys · {total_respondents(@survey_metrics)} respondents
-            </span>
+            <div class="flex items-center gap-4">
+              <span class="text-xs text-gray-400">
+                {length(@surveys)} surveys · {total_respondents(@survey_metrics)} respondents
+              </span>
+              <.link
+                navigate={~p"/surveys/new"}
+                class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                <.icon name="hero-plus" class="h-4 w-4" />
+                New Survey
+              </.link>
+            </div>
           </div>
         </div>
       </header>
