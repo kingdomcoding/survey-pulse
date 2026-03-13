@@ -350,18 +350,18 @@ defmodule SurveyPulseWeb.SurveyLive do
         </div>
 
         <div :if={@breakdown_data != []} class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center justify-between mb-5">
             <h2 class="text-lg font-semibold text-gray-900">Demographic Breakdown</h2>
-            <div class="flex gap-1">
+            <div class="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
               <button
                 :for={dim <- [:age_group, :gender, :region]}
                 phx-click="change_dimension"
                 phx-value-dimension={dim}
                 class={[
-                  "px-3 py-1.5 text-xs rounded-lg transition-colors",
+                  "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
                   if(@breakdown_dimension == dim,
-                    do: "bg-indigo-600 text-white",
-                    else: "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    do: "bg-white text-gray-900 shadow-sm",
+                    else: "text-gray-500 hover:text-gray-700"
                   )
                 ]}
               >
@@ -373,7 +373,7 @@ defmodule SurveyPulseWeb.SurveyLive do
             id="breakdown-chart"
             phx-hook="BreakdownChart"
             data-breakdown={Jason.encode!(Enum.map(@breakdown_data, fn b -> %{segment: b.segment, avg_score: b.avg_score, response_count: b.response_count, top2_box: b.top2_box} end))}
-            class="h-64"
+            class="h-80"
           />
         </div>
 
