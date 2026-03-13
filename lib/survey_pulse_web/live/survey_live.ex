@@ -361,7 +361,7 @@ defmodule SurveyPulseWeb.SurveyLive do
           <div
             id="breakdown-chart"
             phx-hook="BreakdownChart"
-            data-breakdown={Jason.encode!(Enum.map(@breakdown_data, &Map.from_struct/1))}
+            data-breakdown={Jason.encode!(Enum.map(@breakdown_data, fn b -> %{segment: b.segment, avg_score: b.avg_score, response_count: b.response_count, top2_box: b.top2_box} end))}
             class="h-64"
           />
         </div>
