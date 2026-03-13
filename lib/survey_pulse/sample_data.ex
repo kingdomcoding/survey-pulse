@@ -12,7 +12,8 @@ defmodule SurveyPulse.SampleData do
     base_date = ~U[2025-01-01 00:00:00Z]
 
     for wave_num <- 1..wave_count do
-      wave_start = DateTime.add(base_date, (wave_num - 1) * 30, :day)
+      wave_date = base_date |> DateTime.to_date() |> Date.shift(month: wave_num - 1)
+      wave_start = DateTime.new!(wave_date, ~T[00:00:00], "Etc/UTC")
       wave_end = DateTime.add(wave_start, 14, :day)
 
       wave =
@@ -59,32 +60,38 @@ defmodule SurveyPulse.SampleData do
   end
 
   def base_score_for_question(question, wave_num, pattern) do
+    range = question.scale_max - question.scale_min
     midpoint = (question.scale_min + question.scale_max) / 2
 
     case pattern do
       :steady_growth ->
-        trend = wave_num * 0.1
-        dip = if wave_num == 6, do: -0.4, else: 0.0
-        recovery = if wave_num == 7, do: 0.3, else: 0.0
-        midpoint + trend + dip + recovery
+        midpoint - range * 0.15 + wave_num * (range * 0.06)
 
       :campaign_spike ->
-        spike =
-          cond do
-            wave_num <= 2 -> 0.0
-            wave_num == 3 -> 1.2
-            wave_num == 4 -> 0.9
-            wave_num == 5 -> 0.4
-            true -> 0.1
+        boost =
+          case wave_num do
+            1 -> 0.0
+            2 -> 0.0
+            3 -> range * 0.25
+            4 -> range * 0.18
+            5 -> range * 0.06
+            _ -> range * 0.02
           end
 
-        midpoint + spike
+        midpoint - range * 0.05 + boost
 
       :iteration_improvement ->
-        base = wave_num * 0.15
-        plateau = if wave_num in [4, 5], do: -0.2, else: 0.0
-        breakthrough = if wave_num >= 7, do: 0.5, else: 0.0
-        midpoint - 0.5 + base + plateau + breakthrough
+        step =
+          case wave_num do
+            1 -> 0.0
+            2 -> range * 0.02
+            3 -> range * 0.05
+            4 -> range * 0.05
+            5 -> range * 0.15
+            _ -> range * 0.22
+          end
+
+        midpoint - range * 0.12 + step
     end
   end
 
