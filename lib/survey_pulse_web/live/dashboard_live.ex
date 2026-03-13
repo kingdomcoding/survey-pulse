@@ -44,9 +44,15 @@ defmodule SurveyPulseWeb.DashboardLive do
               <p class="text-sm text-gray-500 mt-0.5">Track how consumer perceptions change across survey rounds</p>
             </div>
             <div class="flex items-center gap-4">
-              <span class="text-xs text-gray-400">
-                {length(@surveys)} surveys · {total_respondents(@survey_metrics)} respondents
-              </span>
+              <div class="flex items-center gap-4 text-sm">
+                <span class="text-gray-500">
+                  <span class="font-semibold text-gray-900">{length(@surveys)}</span> surveys
+                </span>
+                <span class="text-gray-300">·</span>
+                <span class="text-gray-500">
+                  <span class="font-semibold text-gray-900">{total_respondents(@survey_metrics)}</span> respondents
+                </span>
+              </div>
               <.link
                 navigate={~p"/surveys/new"}
                 class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
@@ -59,12 +65,25 @@ defmodule SurveyPulseWeb.DashboardLive do
         </div>
       </header>
 
-      <main class="max-w-7xl mx-auto px-6 py-8">
-        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <main class="max-w-7xl mx-auto px-6 py-8 animate-in">
+        <div :if={@surveys == []} class="text-center py-16">
+          <.icon name="hero-clipboard-document-list" class="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h2 class="text-lg font-semibold text-gray-900 mb-1">No surveys yet</h2>
+          <p class="text-sm text-gray-500 mb-4">Create your first survey to start tracking consumer perceptions.</p>
+          <.link
+            navigate={~p"/surveys/new"}
+            class="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+          >
+            <.icon name="hero-plus" class="h-4 w-4" />
+            Create Your First Survey
+          </.link>
+        </div>
+        <div :if={@surveys != []} class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           <.survey_card
-            :for={survey <- @surveys}
+            :for={{survey, idx} <- Enum.with_index(@surveys)}
             survey={survey}
             metrics={Map.get(@survey_metrics, survey.id, %{})}
+            index={idx}
           />
         </div>
       </main>
@@ -75,9 +94,10 @@ defmodule SurveyPulseWeb.DashboardLive do
   defp survey_card(assigns) do
     ~H"""
     <.link navigate={~p"/surveys/#{@survey.id}"} class="group block">
-      <div class={[
-        "bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md hover:border-gray-300 transition-all"
-      ]}>
+      <div
+        class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md hover:border-gray-300 hover:-translate-y-0.5 transition-all duration-200 animate-in"
+        style={"animation-delay: #{@index * 50}ms"}
+      >
         <div class="flex items-center justify-between mb-3">
           <span class={[
             "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",

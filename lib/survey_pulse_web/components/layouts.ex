@@ -11,17 +11,6 @@ defmodule SurveyPulseWeb.Layouts do
   # and other static content.
   embed_templates "layouts/*"
 
-  attr :flash, :map, required: true
-  attr :current_scope, :map, default: nil
-  slot :inner_block, required: true
-
-  def app(assigns) do
-    ~H"""
-    {render_slot(@inner_block)}
-    <.flash_group flash={@flash} />
-    """
-  end
-
   @doc """
   Shows the flash group with standard titles and content.
 

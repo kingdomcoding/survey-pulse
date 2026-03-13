@@ -193,7 +193,7 @@ defmodule SurveyPulseWeb.SurveyLive do
         </div>
       </header>
 
-      <main class="max-w-7xl mx-auto px-6 py-8 space-y-6">
+      <main class="max-w-7xl mx-auto px-6 py-8 space-y-6 animate-in">
         <div :if={@survey.waves == []} class="bg-white rounded-xl border border-gray-200 p-8 shadow-sm text-center">
           <.icon name="hero-beaker" class="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <h3 class="text-lg font-semibold text-gray-900 mb-1">No data yet</h3>
@@ -228,13 +228,17 @@ defmodule SurveyPulseWeb.SurveyLive do
 
         <.key_insight :if={@survey.waves != []} insight={@insight} />
 
-        <div :if={@survey.waves != []} class="flex gap-2 overflow-x-auto pb-1">
+        <div :if={@survey.waves != []} class="relative">
+          <div class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none z-10" />
+        <div class="flex gap-2 overflow-x-auto pb-1 scroll-smooth">
           <div :for={q <- @survey.questions} class="flex items-center gap-1 shrink-0">
             <button
               phx-click="select_question"
               phx-value-question_id={q.id}
               class={[
                 "px-4 py-2.5 rounded-lg text-sm transition-colors text-left min-w-0",
+                "phx-click-loading:opacity-70 phx-click-loading:cursor-wait",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
                 if(q.id == @selected_question_id,
                   do: "bg-indigo-600 text-white shadow-sm",
                   else: "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
@@ -265,6 +269,7 @@ defmodule SurveyPulseWeb.SurveyLive do
             </button>
           </div>
         </div>
+        </div>
 
         <div :if={@survey.waves != []} class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div class="flex items-start justify-between mb-6">
@@ -284,11 +289,20 @@ defmodule SurveyPulseWeb.SurveyLive do
           <%= if @trend_data == [] do %>
             <div class="h-80 flex items-center justify-center">
               <div class="text-center">
-                <.icon name="hero-chart-bar" class="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p class="text-sm text-gray-500">No data available for this question</p>
-                <p :if={any_filter_active?(@filters)} class="text-xs text-gray-400 mt-1">
-                  Try adjusting your filters
+                <.icon name={if any_filter_active?(@filters), do: "hero-funnel", else: "hero-chart-bar"} class="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p class="text-sm font-medium text-gray-900 mb-1">
+                  {if any_filter_active?(@filters), do: "No results match these filters", else: "No data available for this question"}
                 </p>
+                <p :if={any_filter_active?(@filters)} class="text-xs text-gray-500 mb-3">
+                  This combination has no responses in this question.
+                </p>
+                <button
+                  :if={any_filter_active?(@filters)}
+                  phx-click="clear_filters"
+                  class="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                >
+                  Clear all filters
+                </button>
               </div>
             </div>
           <% else %>
@@ -319,7 +333,7 @@ defmodule SurveyPulseWeb.SurveyLive do
               data-scale-min={scale_min(@survey.questions, @selected_question_id)}
               data-scale-max={scale_max(@survey.questions, @selected_question_id)}
               data-question-type={question_type(@survey.questions, @selected_question_id)}
-              class="h-80"
+              class="h-80 phx-change-loading:opacity-50 phx-change-loading:animate-pulse transition-opacity"
             />
           <% end %>
         </div>
@@ -371,7 +385,7 @@ defmodule SurveyPulseWeb.SurveyLive do
           <.sample_warning total={total_filtered_responses(@trend_data)} />
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
+              <thead class="bg-gray-50 sticky top-0 z-10">
                 <tr>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Round
@@ -405,24 +419,30 @@ defmodule SurveyPulseWeb.SurveyLive do
                     No data available
                   </td>
                 </tr>
-                <tr :for={point <- @trend_data} class="hover:bg-gray-50">
+                <tr
+                  :for={point <- @trend_data}
+                  class={[
+                    "hover:bg-gray-50 transition-colors",
+                    if(point == List.last(@trend_data), do: "bg-indigo-50/50", else: "")
+                  ]}
+                >
                   <td class="px-6 py-4 text-sm font-medium text-gray-900">
                     {point.wave_label}
                   </td>
-                  <td class="px-6 py-4 text-sm text-gray-600 text-right">
+                  <td class="px-6 py-4 text-sm text-gray-600 text-right tabular-nums">
                     {format_number(point.response_count)}
                   </td>
-                  <td class="px-6 py-4 text-sm text-gray-900 font-semibold text-right">
+                  <td class="px-6 py-4 text-sm text-gray-900 font-semibold text-right tabular-nums">
                     {point.avg_score}
                   </td>
-                  <td class="px-6 py-4 text-sm text-emerald-600 font-medium text-right">
+                  <td class="px-6 py-4 text-sm text-emerald-600 font-medium text-right tabular-nums">
                     {point.top2_box}%
                   </td>
-                  <td class="px-6 py-4 text-sm text-red-600 font-medium text-right">
+                  <td class="px-6 py-4 text-sm text-red-600 font-medium text-right tabular-nums">
                     {point.bot2_box}%
                   </td>
                   <td class={[
-                    "px-6 py-4 text-sm font-medium text-right",
+                    "px-6 py-4 text-sm font-medium text-right tabular-nums",
                     if(point.wave_number == 1, do: "text-gray-400", else: delta_color(point.delta))
                   ]}>
                     {if point.wave_number == 1, do: "—", else: format_delta(point.delta)}
@@ -468,7 +488,7 @@ defmodule SurveyPulseWeb.SurveyLive do
     <form phx-change="filter" class="flex flex-wrap items-center gap-2">
       <select
         name="age_group"
-        class="rounded-lg border-gray-300 text-xs py-1.5 pl-2 pr-7 focus:ring-indigo-500 focus:border-indigo-500"
+        class="rounded-lg border-gray-300 text-xs py-1.5 pl-2 pr-7 focus:ring-indigo-500 focus:border-indigo-500 phx-change-loading:opacity-60 phx-change-loading:cursor-wait"
       >
         <option value="all" selected={@filters.age_group == "all"}>All Ages</option>
         <option
@@ -481,7 +501,7 @@ defmodule SurveyPulseWeb.SurveyLive do
       </select>
       <select
         name="gender"
-        class="rounded-lg border-gray-300 text-xs py-1.5 pl-2 pr-7 focus:ring-indigo-500 focus:border-indigo-500"
+        class="rounded-lg border-gray-300 text-xs py-1.5 pl-2 pr-7 focus:ring-indigo-500 focus:border-indigo-500 phx-change-loading:opacity-60 phx-change-loading:cursor-wait"
       >
         <option value="all" selected={@filters.gender == "all"}>All Genders</option>
         <option
@@ -494,7 +514,7 @@ defmodule SurveyPulseWeb.SurveyLive do
       </select>
       <select
         name="region"
-        class="rounded-lg border-gray-300 text-xs py-1.5 pl-2 pr-7 focus:ring-indigo-500 focus:border-indigo-500"
+        class="rounded-lg border-gray-300 text-xs py-1.5 pl-2 pr-7 focus:ring-indigo-500 focus:border-indigo-500 phx-change-loading:opacity-60 phx-change-loading:cursor-wait"
       >
         <option value="all" selected={@filters.region == "all"}>All Regions</option>
         <option
