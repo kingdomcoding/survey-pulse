@@ -1,6 +1,7 @@
 defmodule SurveyPulseWeb.DashboardLive do
   use SurveyPulseWeb, :live_view
 
+  alias Phoenix.LiveView.JS
   import Ecto.Query
 
   @impl true
@@ -33,6 +34,14 @@ defmodule SurveyPulseWeb.DashboardLive do
   end
 
   @impl true
+  def handle_info({:survey_created, survey}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:info, "Survey \"#{survey.name}\" created")
+     |> push_navigate(to: ~p"/surveys/#{survey.id}")}
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-gray-50">
@@ -53,13 +62,13 @@ defmodule SurveyPulseWeb.DashboardLive do
                   <span class="font-semibold text-gray-900">{total_respondents(@survey_metrics)}</span> respondents
                 </span>
               </div>
-              <.link
-                navigate={~p"/surveys/new"}
-                class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+              <button
+                phx-click={show_modal()}
+                class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
               >
                 <.icon name="hero-plus" class="h-4 w-4" />
                 New Survey
-              </.link>
+              </button>
             </div>
           </div>
         </div>
@@ -70,13 +79,13 @@ defmodule SurveyPulseWeb.DashboardLive do
           <.icon name="hero-clipboard-document-list" class="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <h2 class="text-lg font-semibold text-gray-900 mb-1">No surveys yet</h2>
           <p class="text-sm text-gray-500 mb-4">Create your first survey to start tracking consumer perceptions.</p>
-          <.link
-            navigate={~p"/surveys/new"}
+          <button
+            phx-click={show_modal()}
             class="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
           >
             <.icon name="hero-plus" class="h-4 w-4" />
             Create Your First Survey
-          </.link>
+          </button>
         </div>
         <div :if={@surveys != []} class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           <.survey_card
@@ -87,6 +96,26 @@ defmodule SurveyPulseWeb.DashboardLive do
           />
         </div>
       </main>
+
+      <div
+        id="new-survey-modal"
+        class="hidden fixed inset-0 z-50"
+      >
+        <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" phx-click={hide_modal()}></div>
+        <div class="fixed inset-y-0 right-0 w-full max-w-lg animate-in">
+          <div class="h-full bg-white shadow-xl overflow-y-auto">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+              <h2 class="text-lg font-semibold text-gray-900">Create Survey</h2>
+              <button phx-click={hide_modal()} class="text-gray-400 hover:text-gray-600 transition-colors">
+                <.icon name="hero-x-mark" class="h-5 w-5" />
+              </button>
+            </div>
+            <div class="p-6">
+              <.live_component module={SurveyPulseWeb.SurveyFormComponent} id="survey-form" />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     """
   end
@@ -355,5 +384,15 @@ defmodule SurveyPulseWeb.DashboardLive do
       {:ok, %{rows: [[count]]}} -> count
       _ -> 0
     end
+  end
+
+  defp show_modal do
+    JS.show(to: "#new-survey-modal")
+    |> JS.add_class("overflow-hidden", to: "body")
+  end
+
+  defp hide_modal do
+    JS.hide(to: "#new-survey-modal")
+    |> JS.remove_class("overflow-hidden", to: "body")
   end
 end

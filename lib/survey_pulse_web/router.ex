@@ -18,7 +18,6 @@ defmodule SurveyPulseWeb.Router do
     pipe_through :browser
 
     live "/", DashboardLive, :index
-    live "/surveys/new", SurveyFormLive, :new
     get "/surveys/:id/export", ExportController, :export
     live "/surveys/:id", SurveyLive, :show
   end
