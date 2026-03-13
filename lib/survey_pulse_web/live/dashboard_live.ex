@@ -35,7 +35,7 @@ defmodule SurveyPulseWeb.DashboardLive do
           <div class="flex items-center justify-between">
             <div>
               <h1 class="text-2xl font-semibold text-gray-900">SurveyPulse</h1>
-              <p class="text-sm text-gray-500 mt-0.5">Consumer insights dashboard</p>
+              <p class="text-sm text-gray-500 mt-0.5">Track how consumer perceptions change across survey rounds</p>
             </div>
             <span class="text-xs text-gray-400">
               {length(@surveys)} surveys · {total_respondents(@survey_metrics)} respondents

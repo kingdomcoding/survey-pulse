@@ -25,7 +25,7 @@ defmodule SurveyPulseWeb.DashboardLiveTest do
     {:ok, view, html} = live(conn, ~p"/")
 
     assert html =~ "SurveyPulse"
-    assert html =~ "Consumer insights dashboard"
+    assert html =~ "Track how consumer perceptions change"
     assert html =~ survey.name
     assert html =~ "Brand Health"
     assert has_element?(view, "a[href='/surveys/#{survey.id}']")
