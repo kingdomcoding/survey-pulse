@@ -12,10 +12,16 @@ defmodule SurveyPulseWeb.DashboardLive do
     surveys = SurveyPulse.Surveys.list_surveys!(load: [:wave_count, :latest_wave_number])
     survey_metrics = load_survey_metrics(surveys)
 
+    sorted_surveys =
+      Enum.sort_by(surveys, fn s ->
+        delta = survey_metrics |> Map.get(s.id, %{}) |> Map.get(:latest_delta, 0.0)
+        -abs(delta)
+      end)
+
     {:ok,
      assign(socket,
        page_title: "SurveyPulse",
-       surveys: surveys,
+       surveys: sorted_surveys,
        survey_metrics: survey_metrics
      )}
   end
@@ -80,12 +86,28 @@ defmodule SurveyPulseWeb.DashboardLive do
         <p class="text-sm text-gray-500 line-clamp-2 mb-4">{@survey.description}</p>
 
         <div class="pt-4 border-t border-gray-100">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-baseline gap-2">
+              <span class="text-2xl font-bold text-gray-900">
+                {format_score(Map.get(@metrics, :latest_score, 0.0))}
+              </span>
+              <span class="text-xs text-gray-400">
+                {Map.get(@metrics, :sparkline_question_code, "")}
+              </span>
+            </div>
+            <span class={[
+              "inline-flex items-center text-sm font-medium px-2 py-0.5 rounded-full",
+              delta_badge_class(@metrics)
+            ]}>
+              {format_delta_badge(Map.get(@metrics, :latest_delta, 0.0))}
+            </span>
+          </div>
           <div class="flex items-center gap-2 mb-3">
             <span class={[
               "inline-flex w-2 h-2 rounded-full shrink-0",
               insight_dot_color(@metrics)
             ]} />
-            <p class="text-sm font-medium text-gray-700">
+            <p class="text-sm text-gray-600">
               {topline_insight(@metrics)}
             </p>
           </div>
@@ -105,6 +127,7 @@ defmodule SurveyPulseWeb.DashboardLive do
             id={"spark-#{@survey.id}"}
             phx-hook="SparkLine"
             data-scores={Jason.encode!(Map.get(@metrics, :wave_scores, []))}
+            data-color={sparkline_color(@survey.category)}
             class="h-10"
           />
         </div>
@@ -118,10 +141,10 @@ defmodule SurveyPulseWeb.DashboardLive do
     code = Map.get(metrics, :sparkline_question_code, "")
 
     cond do
-      delta > 0.3 ->
+      delta > 0.2 ->
         "#{code} trending up — improved #{format_delta(delta)} pts last round"
 
-      delta < -0.3 ->
+      delta < -0.2 ->
         "#{code} needs attention — dropped #{format_delta(abs(delta))} pts last round"
 
       true ->
@@ -133,8 +156,8 @@ defmodule SurveyPulseWeb.DashboardLive do
     delta = Map.get(metrics, :latest_delta, 0.0)
 
     cond do
-      delta > 0.3 -> "bg-emerald-500"
-      delta < -0.3 -> "bg-red-500"
+      delta > 0.2 -> "bg-emerald-500"
+      delta < -0.2 -> "bg-red-500"
       true -> "bg-gray-400"
     end
   end
@@ -143,8 +166,8 @@ defmodule SurveyPulseWeb.DashboardLive do
     delta = Map.get(metrics, :latest_delta, 0.0)
 
     cond do
-      delta > 0.3 -> "border-l-4 border-l-emerald-400"
-      delta < -0.3 -> "border-l-4 border-l-red-400"
+      delta > 0.2 -> "border-l-4 border-l-emerald-400"
+      delta < -0.2 -> "border-l-4 border-l-red-400"
       true -> ""
     end
   end
@@ -153,6 +176,33 @@ defmodule SurveyPulseWeb.DashboardLive do
   defp format_delta(delta) when is_float(delta) and delta < 0, do: "#{Float.round(delta, 2)}"
   defp format_delta(delta) when is_float(delta), do: "#{Float.round(delta, 2)}"
   defp format_delta(_), do: "—"
+
+  defp format_score(score) when is_number(score) and score > 0, do: Float.round(score / 1, 2)
+  defp format_score(_), do: "—"
+
+  defp delta_badge_class(metrics) do
+    delta = Map.get(metrics, :latest_delta, 0.0)
+
+    cond do
+      delta > 0.2 -> "bg-emerald-50 text-emerald-700"
+      delta < -0.2 -> "bg-red-50 text-red-700"
+      true -> "bg-gray-100 text-gray-500"
+    end
+  end
+
+  defp format_delta_badge(delta) when is_float(delta) and delta > 0,
+    do: "+#{Float.round(delta, 2)}"
+
+  defp format_delta_badge(delta) when is_float(delta) and delta < 0,
+    do: "#{Float.round(delta, 2)}"
+
+  defp format_delta_badge(_), do: "—"
+
+  defp sparkline_color(:brand_health), do: "#3b82f6"
+  defp sparkline_color(:ad_testing), do: "#8b5cf6"
+  defp sparkline_color(:concept_testing), do: "#f59e0b"
+  defp sparkline_color(:product_testing), do: "#10b981"
+  defp sparkline_color(_), do: "#818cf8"
 
   defp category_color(:brand_health), do: "bg-blue-100 text-blue-700"
   defp category_color(:ad_testing), do: "bg-purple-100 text-purple-700"
@@ -217,6 +267,7 @@ defmodule SurveyPulseWeb.DashboardLive do
         latest_wave_label: latest_wave.label,
         latest_wave_responses: Map.get(latest_scores, :count, 0),
         latest_delta: delta,
+        latest_score: List.last(score_values) || 0.0,
         wave_scores: score_values,
         sparkline_question_code: first_question.code
       }
@@ -229,6 +280,7 @@ defmodule SurveyPulseWeb.DashboardLive do
       latest_wave_label: "—",
       latest_wave_responses: 0,
       latest_delta: 0.0,
+      latest_score: 0.0,
       wave_scores: [],
       sparkline_question_code: nil
     }
@@ -239,7 +291,7 @@ defmodule SurveyPulseWeb.DashboardLive do
       from(w in "waves",
         where: w.survey_id == type(^survey_id, Ecto.UUID),
         order_by: [asc: w.wave_number],
-        select: %{id: w.id, wave_number: w.wave_number, label: w.label}
+        select: %{id: type(w.id, Ecto.UUID), wave_number: w.wave_number, label: w.label}
       )
     )
   end
@@ -251,7 +303,7 @@ defmodule SurveyPulseWeb.DashboardLive do
         where: q.question_type != "nps",
         order_by: [asc: q.inserted_at],
         limit: 1,
-        select: %{id: q.id, code: q.code}
+        select: %{id: type(q.id, Ecto.UUID), code: q.code}
       )
     )
   end
@@ -274,7 +326,7 @@ defmodule SurveyPulseWeb.DashboardLive do
     }) do
       {:ok, %{rows: rows}} ->
         Map.new(rows, fn [wid, avg, cnt] ->
-          {wid, %{avg: avg, count: cnt}}
+          {Ecto.UUID.cast!(wid), %{avg: avg, count: cnt}}
         end)
       _ ->
         %{}

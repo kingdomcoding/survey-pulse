@@ -12,6 +12,7 @@ const SparkLine = {
 
   render() {
     const scores = JSON.parse(this.el.dataset.scores)
+    const color = this.el.dataset.color || "#818cf8"
     if (this.chart) this.chart.destroy()
     if (!scores || scores.length === 0) return
 
@@ -25,11 +26,12 @@ const SparkLine = {
         labels: scores.map((_, i) => i),
         datasets: [{
           data: scores,
-          borderColor: "#818cf8",
+          borderColor: color,
+          backgroundColor: color + "18",
           borderWidth: 1.5,
           pointRadius: 0,
           tension: 0.4,
-          fill: false
+          fill: true
         }]
       },
       options: {

@@ -255,26 +255,28 @@ defmodule SurveyPulse.Seeds do
 
     case pattern do
       :steady_growth ->
-        trend = wave_num * 0.08
-        dip = if wave_num == 6, do: -0.2, else: 0.0
-        midpoint + trend + dip
+        trend = wave_num * 0.1
+        dip = if wave_num == 6, do: -0.4, else: 0.0
+        recovery = if wave_num == 7, do: 0.3, else: 0.0
+        midpoint + trend + dip + recovery
 
       :campaign_spike ->
         spike =
           cond do
             wave_num <= 2 -> 0.0
-            wave_num in [3, 4] -> 0.6
-            wave_num == 5 -> 0.3
+            wave_num == 3 -> 1.2
+            wave_num == 4 -> 0.9
+            wave_num == 5 -> 0.4
             true -> 0.1
           end
 
         midpoint + spike
 
       :iteration_improvement ->
-        base = wave_num * 0.12
-        plateau = if wave_num in [5, 6], do: -0.15, else: 0.0
-        breakthrough = if wave_num >= 8, do: 0.25, else: 0.0
-        midpoint - 0.3 + base + plateau + breakthrough
+        base = wave_num * 0.15
+        plateau = if wave_num in [4, 5], do: -0.2, else: 0.0
+        breakthrough = if wave_num >= 7, do: 0.5, else: 0.0
+        midpoint - 0.5 + base + plateau + breakthrough
     end
   end
 

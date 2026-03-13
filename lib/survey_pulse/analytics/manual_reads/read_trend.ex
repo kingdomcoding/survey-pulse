@@ -88,7 +88,7 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
     case SurveyPulse.ClickRepo.query(sql, params) do
       {:ok, %{rows: rows}} ->
         Map.new(rows, fn [wid, promo, detract, n] ->
-          {wid, %{
+          {Ecto.UUID.cast!(wid), %{
             avg_score: Float.round(promo - detract, 1),
             top2_box: promo,
             bot2_box: detract,
@@ -103,16 +103,30 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
   end
 
   defp row_to_map(columns, row) do
-    columns |> Enum.zip(row) |> Map.new(fn {c, v} -> {String.to_existing_atom(c), v} end)
+    columns
+    |> Enum.zip(row)
+    |> Map.new(fn {c, v} -> {String.to_existing_atom(c), v} end)
+    |> normalize_uuids([:wave_id])
+  end
+
+  defp normalize_uuids(map, keys) do
+    Enum.reduce(keys, map, fn key, acc ->
+      case Map.get(acc, key) do
+        val when is_binary(val) and byte_size(val) == 16 -> Map.put(acc, key, Ecto.UUID.cast!(val))
+        _ -> acc
+      end
+    end)
   end
 
   defp load_wave_metadata([]), do: %{}
 
   defp load_wave_metadata(wave_ids) do
+    cast_ids = Enum.map(wave_ids, &Ecto.UUID.cast!/1)
+
     SurveyPulse.Repo.all(
       from(w in "waves",
-        where: w.id in type(^wave_ids, {:array, Ecto.UUID}),
-        select: %{id: w.id, wave_number: w.wave_number, label: w.label}
+        where: w.id in type(^cast_ids, {:array, Ecto.UUID}),
+        select: %{id: type(w.id, Ecto.UUID), wave_number: w.wave_number, label: w.label}
       )
     )
     |> Map.new(&{&1.id, &1})
@@ -148,7 +162,7 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
     case SurveyPulse.ClickRepo.query(sql, params) do
       {:ok, %{rows: rows}} ->
         Map.new(rows, fn [wid, t2b, b2b] ->
-          {wid, %{top2_box: Float.round(t2b * 100, 1), bot2_box: Float.round(b2b * 100, 1)}}
+          {Ecto.UUID.cast!(wid), %{top2_box: Float.round(t2b * 100, 1), bot2_box: Float.round(b2b * 100, 1)}}
         end)
 
       _ ->
@@ -231,7 +245,7 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
     case SurveyPulse.ClickRepo.query(sql, params) do
       {:ok, %{rows: rows}} ->
         Map.new(rows, fn [wid, var, n] ->
-          {wid, %{variance: var, n: n}}
+          {Ecto.UUID.cast!(wid), %{variance: var, n: n}}
         end)
       _ ->
         %{}
