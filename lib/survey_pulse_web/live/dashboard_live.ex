@@ -193,7 +193,16 @@ defmodule SurveyPulseWeb.DashboardLive do
       empty_topline()
     else
       wave_id_order = Enum.map(waves, & &1.id)
-      scores_by_wave = load_question_scores(survey_id, first_question.id)
+      is_nps = first_question.question_type == "nps"
+
+      scores_by_wave =
+        if is_nps do
+          nps_scores = load_nps_wave_scores(survey_id, first_question.id)
+          Map.new(nps_scores, fn {wid, score} -> {wid, %{avg: score, count: 0}} end)
+        else
+          load_question_scores(survey_id, first_question.id)
+        end
+
       respondent_count = load_respondent_count(survey_id)
 
       ordered = Enum.map(wave_id_order, &Map.get(scores_by_wave, &1, %{avg: 0.0, count: 0}))
@@ -247,10 +256,13 @@ defmodule SurveyPulseWeb.DashboardLive do
     SurveyPulse.Repo.one(
       from(q in "questions",
         where: q.survey_id == type(^survey_id, Ecto.UUID),
-        where: q.question_type != "nps",
         order_by: [asc: q.inserted_at],
         limit: 1,
-        select: %{id: type(q.id, Ecto.UUID), code: q.code}
+        select: %{
+          id: type(q.id, Ecto.UUID),
+          code: q.code,
+          question_type: type(q.question_type, :string)
+        }
       )
     )
   end
@@ -275,6 +287,29 @@ defmodule SurveyPulseWeb.DashboardLive do
         Map.new(rows, fn [wid, avg, cnt] ->
           {Ecto.UUID.cast!(wid), %{avg: avg, count: cnt}}
         end)
+      _ ->
+        %{}
+    end
+  end
+
+  defp load_nps_wave_scores(survey_id, question_id) do
+    sql = """
+    SELECT
+      wave_id,
+      round(countIf(score >= 9) / count(*) * 100 - countIf(score <= 6) / count(*) * 100, 1) AS nps_score
+    FROM responses
+    WHERE survey_id = {survey_id:UUID}
+      AND question_id = {question_id:UUID}
+    GROUP BY wave_id
+    """
+
+    case SurveyPulse.ClickRepo.query(sql, %{
+      "survey_id" => survey_id,
+      "question_id" => question_id
+    }) do
+      {:ok, %{rows: rows}} ->
+        Map.new(rows, fn [wid, score] -> {Ecto.UUID.cast!(wid), score} end)
+
       _ ->
         %{}
     end
