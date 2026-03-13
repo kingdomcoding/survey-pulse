@@ -67,8 +67,7 @@ defmodule SurveyPulseWeb.DashboardLive do
     ~H"""
     <.link navigate={~p"/surveys/#{@survey.id}"} class="group block">
       <div class={[
-        "bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md hover:border-gray-300 transition-all",
-        card_accent(@metrics)
+        "bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md hover:border-gray-300 transition-all"
       ]}>
         <div class="flex items-center justify-between mb-3">
           <span class={[
@@ -84,7 +83,7 @@ defmodule SurveyPulseWeb.DashboardLive do
           {@survey.name}
         </h2>
 
-        <p class="text-sm text-gray-600 mb-3">
+        <p class={["text-sm mb-3", insight_color(@metrics)]}>
           {topline_insight(@metrics)}
         </p>
 
@@ -124,13 +123,13 @@ defmodule SurveyPulseWeb.DashboardLive do
     end
   end
 
-  defp card_accent(metrics) do
+  defp insight_color(metrics) do
     delta = Map.get(metrics, :latest_delta, 0.0)
 
     cond do
-      delta > 0.2 -> "border-l-4 border-l-emerald-400"
-      delta < -0.2 -> "border-l-4 border-l-red-400"
-      true -> ""
+      delta > 0.2 -> "text-emerald-600"
+      delta < -0.2 -> "text-red-600"
+      true -> "text-gray-500"
     end
   end
 
