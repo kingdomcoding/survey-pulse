@@ -98,27 +98,6 @@ defmodule SurveyPulseWeb.SurveyLive do
   end
 
   @impl true
-  def handle_info({:do_generate, pattern}, socket) do
-    survey = socket.assigns.survey
-    pattern_atom = String.to_existing_atom(pattern)
-
-    SurveyPulse.SampleData.generate!(survey.id, survey.questions,
-      wave_count: 6,
-      responses_per_wave: 500,
-      pattern: pattern_atom
-    )
-
-    survey = SurveyPulse.Surveys.get_survey!(survey.id, load: [:questions, :waves])
-    first_question = List.first(survey.questions)
-
-    {:noreply,
-     socket
-     |> put_flash(:info, "Generated 6 rounds of sample data")
-     |> assign(generating: false, survey: survey, available_filters: load_available_filters(survey.id))
-     |> push_patch(to: ~p"/surveys/#{survey.id}?question=#{first_question && first_question.id}")}
-  end
-
-  @impl true
   def handle_event("toggle_compare", %{"question_id" => ""}, socket) do
     {:noreply, assign(socket, compare_question_id: nil, compare_trend_data: [])}
   end
@@ -153,6 +132,27 @@ defmodule SurveyPulseWeb.SurveyLive do
   def handle_event("clear_filters", _params, socket) do
     query_params = %{"question" => socket.assigns.selected_question_id}
     {:noreply, push_patch(socket, to: ~p"/surveys/#{socket.assigns.survey.id}?#{query_params}")}
+  end
+
+  @impl true
+  def handle_info({:do_generate, pattern}, socket) do
+    survey = socket.assigns.survey
+    pattern_atom = String.to_existing_atom(pattern)
+
+    SurveyPulse.SampleData.generate!(survey.id, survey.questions,
+      wave_count: 6,
+      responses_per_wave: 500,
+      pattern: pattern_atom
+    )
+
+    survey = SurveyPulse.Surveys.get_survey!(survey.id, load: [:questions, :waves])
+    first_question = List.first(survey.questions)
+
+    {:noreply,
+     socket
+     |> put_flash(:info, "Generated 6 rounds of sample data")
+     |> assign(generating: false, survey: survey, available_filters: load_available_filters(survey.id))
+     |> push_patch(to: ~p"/surveys/#{survey.id}?question=#{first_question && first_question.id}")}
   end
 
   @impl true

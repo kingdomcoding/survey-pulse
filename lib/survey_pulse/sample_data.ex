@@ -51,9 +51,7 @@ defmodule SurveyPulse.SampleData do
           }
         end
 
-      responses
-      |> Enum.chunk_every(5_000)
-      |> Enum.each(&SurveyPulse.Analytics.ingest_responses!/1)
+      SurveyPulse.Ingestion.Pipeline.ingest(responses)
 
       wave
     end
