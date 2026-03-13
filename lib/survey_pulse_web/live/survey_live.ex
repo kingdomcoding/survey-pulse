@@ -21,7 +21,9 @@ defmodule SurveyPulseWeb.SurveyLive do
        breakdown_dimension: :age_group,
        breakdown_data: [],
        compare_question_id: nil,
-       compare_trend_data: []
+       compare_trend_data: [],
+       generating: false,
+       sample_pattern: "steady_growth"
      )}
   end
 
@@ -87,6 +89,38 @@ defmodule SurveyPulseWeb.SurveyLive do
     }
 
     {:noreply, push_patch(socket, to: ~p"/surveys/#{socket.assigns.survey.id}?#{query_params}")}
+  end
+
+  @impl true
+  def handle_event("set_pattern", %{"pattern" => pattern}, socket) do
+    {:noreply, assign(socket, sample_pattern: pattern)}
+  end
+
+  @impl true
+  def handle_event("generate_sample_data", _params, socket) do
+    send(self(), {:do_generate, socket.assigns.sample_pattern})
+    {:noreply, assign(socket, generating: true)}
+  end
+
+  @impl true
+  def handle_info({:do_generate, pattern}, socket) do
+    survey = socket.assigns.survey
+    pattern_atom = String.to_existing_atom(pattern)
+
+    SurveyPulse.SampleData.generate!(survey.id, survey.questions,
+      wave_count: 6,
+      responses_per_wave: 500,
+      pattern: pattern_atom
+    )
+
+    survey = SurveyPulse.Surveys.get_survey!(survey.id, load: [:questions, :waves])
+    first_question = List.first(survey.questions)
+
+    {:noreply,
+     socket
+     |> put_flash(:info, "Generated 6 rounds of sample data")
+     |> assign(generating: false, survey: survey, available_filters: load_available_filters(survey.id))
+     |> push_patch(to: ~p"/surveys/#{survey.id}?question=#{first_question && first_question.id}")}
   end
 
   @impl true
@@ -160,9 +194,41 @@ defmodule SurveyPulseWeb.SurveyLive do
       </header>
 
       <main class="max-w-7xl mx-auto px-6 py-8 space-y-6">
-        <.key_insight insight={@insight} />
+        <div :if={@survey.waves == []} class="bg-white rounded-xl border border-gray-200 p-8 shadow-sm text-center">
+          <.icon name="hero-beaker" class="h-12 w-12 text-gray-300 mx-auto mb-3" />
+          <h3 class="text-lg font-semibold text-gray-900 mb-1">No data yet</h3>
+          <p class="text-sm text-gray-500 mb-4">Generate realistic sample responses to see this survey in action.</p>
+          <div class="flex items-center justify-center gap-3">
+            <button
+              phx-click="generate_sample_data"
+              disabled={@generating}
+              class={[
+                "px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg",
+                "hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-wait",
+                "inline-flex items-center gap-2"
+              ]}
+            >
+              <svg :if={@generating} class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              {if @generating, do: "Generating…", else: "Generate Sample Data"}
+            </button>
+            <select
+              name="pattern"
+              phx-change="set_pattern"
+              class="rounded-lg border-gray-300 text-sm"
+            >
+              <option value="steady_growth" selected={@sample_pattern == "steady_growth"}>Steady Growth</option>
+              <option value="campaign_spike" selected={@sample_pattern == "campaign_spike"}>Campaign Spike</option>
+              <option value="iteration_improvement" selected={@sample_pattern == "iteration_improvement"}>Iterative Improvement</option>
+            </select>
+          </div>
+        </div>
 
-        <div class="flex gap-2 overflow-x-auto pb-1">
+        <.key_insight :if={@survey.waves != []} insight={@insight} />
+
+        <div :if={@survey.waves != []} class="flex gap-2 overflow-x-auto pb-1">
           <div :for={q <- @survey.questions} class="flex items-center gap-1 shrink-0">
             <button
               phx-click="select_question"
@@ -200,7 +266,7 @@ defmodule SurveyPulseWeb.SurveyLive do
           </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div :if={@survey.waves != []} class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div class="flex items-start justify-between mb-6">
             <div>
               <h2 class="text-lg font-semibold text-gray-900 mb-1">Score Over Time</h2>
@@ -286,7 +352,7 @@ defmodule SurveyPulseWeb.SurveyLive do
           />
         </div>
 
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div :if={@survey.waves != []} class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
             <h2 class="text-lg font-semibold text-gray-900">Round-by-Round Detail</h2>
             <div class="flex items-center gap-3">
