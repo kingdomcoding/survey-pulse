@@ -49,6 +49,94 @@ defmodule SurveyPulse.Seeds do
       ],
       wave_count: 10,
       responses_per_wave: 600
+    },
+    %{
+      name: "Brand Health Tracker — FreshBrew Coffee",
+      description:
+        "Monthly tracking study for FreshBrew Coffee measuring brand perception, quality, and recommendation intent.",
+      category: :brand_health,
+      pattern: :steady_growth,
+      questions: [
+        %{code: "AWARENESS", text: "How aware are you of FreshBrew Coffee?", type: :likert, min: 1, max: 5},
+        %{code: "QUALITY", text: "How would you rate the quality of FreshBrew Coffee?", type: :likert, min: 1, max: 5},
+        %{code: "NPS", text: "How likely are you to recommend FreshBrew Coffee?", type: :nps, min: 0, max: 10}
+      ],
+      wave_count: 6,
+      responses_per_wave: 900
+    },
+    %{
+      name: "Ad Post-Test — Holiday TV Spot",
+      description:
+        "Post-campaign evaluation of the Holiday 2025 television advertisement. Measures recall, brand lift, and emotional response.",
+      category: :ad_testing,
+      pattern: :campaign_spike,
+      questions: [
+        %{code: "RECALL", text: "Do you remember seeing this advertisement?", type: :likert, min: 1, max: 5},
+        %{code: "BRNDLIFT", text: "After seeing this ad, how do you feel about the brand?", type: :likert, min: 1, max: 5},
+        %{code: "EMOTION", text: "How did this advertisement make you feel?", type: :scale, min: 1, max: 5},
+        %{code: "INTENT", text: "How likely are you to purchase after seeing this ad?", type: :likert, min: 1, max: 5}
+      ],
+      wave_count: 4,
+      responses_per_wave: 1000
+    },
+    %{
+      name: "Product Test — Eco-Friendly Packaging",
+      description:
+        "Testing consumer response to new sustainable packaging designs across multiple iterations.",
+      category: :product_testing,
+      pattern: :iteration_improvement,
+      questions: [
+        %{code: "APPEAL", text: "How appealing is this packaging design?", type: :likert, min: 1, max: 5},
+        %{code: "SUSTAIN", text: "How environmentally friendly does this packaging appear?", type: :likert, min: 1, max: 5},
+        %{code: "PREF", text: "Would you prefer this packaging over the current design?", type: :likert, min: 1, max: 5},
+        %{code: "NPS", text: "How likely would you recommend products with this packaging?", type: :nps, min: 0, max: 10}
+      ],
+      wave_count: 7,
+      responses_per_wave: 500
+    },
+    %{
+      name: "Concept Test — Ready-to-Drink Cocktails",
+      description:
+        "Evaluating consumer interest in a new line of premium ready-to-drink cocktails across flavor variants.",
+      category: :concept_testing,
+      pattern: :steady_growth,
+      questions: [
+        %{code: "APPEAL", text: "How appealing is this product concept?", type: :likert, min: 1, max: 5},
+        %{code: "UNIQUE", text: "How unique is this compared to existing options?", type: :likert, min: 1, max: 5},
+        %{code: "INTENT", text: "How likely would you be to purchase?", type: :likert, min: 1, max: 5},
+        %{code: "NPS", text: "How likely would you recommend this product?", type: :nps, min: 0, max: 10}
+      ],
+      wave_count: 5,
+      responses_per_wave: 700
+    },
+    %{
+      name: "Brand Health Tracker — GlowSkin Cosmetics",
+      description:
+        "Quarterly brand tracking for GlowSkin Cosmetics measuring awareness, trust, and loyalty across demographics.",
+      category: :brand_health,
+      pattern: :campaign_spike,
+      questions: [
+        %{code: "AWARENESS", text: "How familiar are you with GlowSkin Cosmetics?", type: :likert, min: 1, max: 5},
+        %{code: "TRUST", text: "How much do you trust GlowSkin as a brand?", type: :likert, min: 1, max: 5},
+        %{code: "LOYALTY", text: "How likely are you to continue buying GlowSkin?", type: :likert, min: 1, max: 5},
+        %{code: "NPS", text: "How likely are you to recommend GlowSkin?", type: :nps, min: 0, max: 10}
+      ],
+      wave_count: 8,
+      responses_per_wave: 800
+    },
+    %{
+      name: "Ad Pre-Test — Back to School Digital",
+      description:
+        "Pre-launch testing for back-to-school digital campaign targeting parents of school-age children.",
+      category: :ad_testing,
+      pattern: :iteration_improvement,
+      questions: [
+        %{code: "RECALL", text: "How memorable is this advertisement?", type: :likert, min: 1, max: 5},
+        %{code: "RELEVANCE", text: "How relevant is this ad to you personally?", type: :likert, min: 1, max: 5},
+        %{code: "INTENT", text: "How likely are you to click or learn more?", type: :likert, min: 1, max: 5}
+      ],
+      wave_count: 5,
+      responses_per_wave: 600
     }
   ]
 
