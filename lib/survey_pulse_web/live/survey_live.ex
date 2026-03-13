@@ -181,14 +181,25 @@ defmodule SurveyPulseWeb.SurveyLive do
 
   @impl true
   def handle_info({:responses_ingested, _count}, socket) do
-    trend_data =
-      load_trend_data(
-        socket.assigns.survey.id,
-        socket.assigns.selected_question_id,
-        socket.assigns.filters
-      )
+    survey = socket.assigns.survey
+    qid = socket.assigns.selected_question_id
 
-    {:noreply, assign(socket, trend_data: trend_data)}
+    trend_data = load_trend_data(survey.id, qid, socket.assigns.filters)
+    latest_wave = List.last(survey.waves)
+
+    breakdown_data =
+      if latest_wave && qid do
+        SurveyPulse.Analytics.demographic_breakdown!(
+          survey.id,
+          qid,
+          latest_wave.id,
+          socket.assigns.breakdown_dimension
+        )
+      else
+        []
+      end
+
+    {:noreply, assign(socket, trend_data: trend_data, breakdown_data: breakdown_data)}
   end
 
   @impl true
@@ -319,6 +330,19 @@ defmodule SurveyPulseWeb.SurveyLive do
               ]}>
                 {scale_label(selected_question(@survey.questions, @selected_question_id))}
               </span>
+              <button
+                phx-click={if @simulating, do: "stop_simulation", else: "start_simulation"}
+                class={[
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                  if(@simulating,
+                    do: "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100",
+                    else: "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                  )
+                ]}
+              >
+                <span class={["inline-block w-2 h-2 rounded-full", if(@simulating, do: "bg-red-500 animate-pulse", else: "bg-emerald-500")]} />
+                {if @simulating, do: "Stop Simulation", else: "Simulate Live Data"}
+              </button>
             </div>
           </div>
           <%= if @trend_data == [] do %>
