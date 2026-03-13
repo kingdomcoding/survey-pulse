@@ -190,9 +190,12 @@ defmodule SurveyPulseWeb.SurveyLive do
         </div>
 
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-100">
+          <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
             <h2 class="text-lg font-semibold text-gray-900">Round-by-Round Detail</h2>
+            <.filter_bar filters={@filters} available_filters={@available_filters} />
           </div>
+          <.active_filters filters={@filters} />
+          <.sample_warning total={total_filtered_responses(@trend_data)} />
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
@@ -282,19 +285,6 @@ defmodule SurveyPulseWeb.SurveyLive do
             </table>
           </div>
         </div>
-        <.sample_warning total={total_filtered_responses(@trend_data)} />
-
-        <details class={["group", if(any_filter_active?(@filters), do: "open", else: "")]}>
-          <summary class="flex items-center gap-2 cursor-pointer text-sm text-gray-500 hover:text-gray-700 transition-colors py-2">
-            <.icon name="hero-funnel" class="h-4 w-4" />
-            <span>Filter by demographics</span>
-            <.icon name="hero-chevron-right" class="h-3 w-3 transition-transform group-open:rotate-90" />
-          </summary>
-          <div class="pt-3 space-y-3">
-            <.filter_bar filters={@filters} available_filters={@available_filters} />
-            <.active_filters filters={@filters} />
-          </div>
-        </details>
       </main>
     </div>
     """
@@ -302,71 +292,53 @@ defmodule SurveyPulseWeb.SurveyLive do
 
   defp filter_bar(assigns) do
     ~H"""
-    <div class="flex flex-wrap gap-4">
-      <div>
-        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-          Age Group
-        </label>
-        <select
-          phx-change="filter"
-          name="age_group"
-          class="rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+    <form phx-change="filter" class="flex flex-wrap items-center gap-2">
+      <select
+        name="age_group"
+        class="rounded-lg border-gray-300 text-xs py-1.5 pl-2 pr-7 focus:ring-indigo-500 focus:border-indigo-500"
+      >
+        <option value="all" selected={@filters.age_group == "all"}>All Ages</option>
+        <option
+          :for={ag <- @available_filters.age_groups}
+          value={ag}
+          selected={@filters.age_group == ag}
         >
-          <option value="all" selected={@filters.age_group == "all"}>All Ages</option>
-          <option
-            :for={ag <- @available_filters.age_groups}
-            value={ag}
-            selected={@filters.age_group == ag}
-          >
-            {ag}
-          </option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-          Gender
-        </label>
-        <select
-          phx-change="filter"
-          name="gender"
-          class="rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+          {ag}
+        </option>
+      </select>
+      <select
+        name="gender"
+        class="rounded-lg border-gray-300 text-xs py-1.5 pl-2 pr-7 focus:ring-indigo-500 focus:border-indigo-500"
+      >
+        <option value="all" selected={@filters.gender == "all"}>All Genders</option>
+        <option
+          :for={g <- @available_filters.genders}
+          value={g}
+          selected={@filters.gender == g}
         >
-          <option value="all" selected={@filters.gender == "all"}>All Genders</option>
-          <option
-            :for={g <- @available_filters.genders}
-            value={g}
-            selected={@filters.gender == g}
-          >
-            {format_gender(g)}
-          </option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-          Region
-        </label>
-        <select
-          phx-change="filter"
-          name="region"
-          class="rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+          {format_gender(g)}
+        </option>
+      </select>
+      <select
+        name="region"
+        class="rounded-lg border-gray-300 text-xs py-1.5 pl-2 pr-7 focus:ring-indigo-500 focus:border-indigo-500"
+      >
+        <option value="all" selected={@filters.region == "all"}>All Regions</option>
+        <option
+          :for={r <- @available_filters.regions}
+          value={r}
+          selected={@filters.region == r}
         >
-          <option value="all" selected={@filters.region == "all"}>All Regions</option>
-          <option
-            :for={r <- @available_filters.regions}
-            value={r}
-            selected={@filters.region == r}
-          >
-            {format_region(r)}
-          </option>
-        </select>
-      </div>
-    </div>
+          {format_region(r)}
+        </option>
+      </select>
+    </form>
     """
   end
 
   defp active_filters(assigns) do
     ~H"""
-    <div :if={any_filter_active?(@filters)} class="flex items-center gap-2 flex-wrap">
+    <div :if={any_filter_active?(@filters)} class="flex items-center gap-2 flex-wrap px-6 py-2 bg-indigo-50 border-b border-indigo-100">
       <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Filtered by:</span>
       <span
         :if={@filters.age_group != "all"}
@@ -397,7 +369,7 @@ defmodule SurveyPulseWeb.SurveyLive do
     ~H"""
     <div
       :if={@total < 100 and @total > 0}
-      class="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800"
+      class="flex items-center gap-2 px-6 py-2.5 bg-amber-50 border-b border-amber-200 text-sm text-amber-800"
     >
       <.icon name="hero-exclamation-triangle" class="h-4 w-4 text-amber-500 shrink-0" />
       <span>Small sample size ({@total} responses). Results may not be statistically reliable.</span>
