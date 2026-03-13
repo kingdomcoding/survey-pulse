@@ -79,47 +79,59 @@ defmodule SurveyPulseWeb.DashboardLive do
           <span class="text-xs text-gray-400">{@survey.wave_count} rounds</span>
         </div>
 
-        <h2 class="text-base font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors mb-2">
+        <h2 class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors mb-3">
           {@survey.name}
         </h2>
 
-        <p class={["text-sm mb-3", insight_color(@metrics)]}>
-          {topline_insight(@metrics)}
-        </p>
+        <div class="flex items-baseline gap-2 mb-1">
+          <span class="text-2xl font-bold text-gray-900">{format_score(@metrics)}</span>
+          <span class={["text-sm font-medium", insight_color(@metrics)]}>
+            {format_delta_short(@metrics)}
+          </span>
+          <span class={["text-xs", insight_color(@metrics)]}>
+            {short_insight(@metrics)}
+          </span>
+        </div>
 
         <div
           id={"spark-#{@survey.id}"}
           phx-hook="SparkLine"
           data-scores={Jason.encode!(Map.get(@metrics, :wave_scores, []))}
           data-color={sparkline_color(@survey.category)}
-          class="h-10 mb-3"
+          class="h-16 mb-3"
         />
 
         <div class="flex items-center justify-between text-xs text-gray-400">
           <span>{format_number(Map.get(@metrics, :total_respondents, 0))} respondents</span>
-          <span>Latest: {Map.get(@metrics, :latest_wave_label, "—")}</span>
+          <span>{Map.get(@metrics, :latest_wave_label, "—")}</span>
         </div>
       </div>
     </.link>
     """
   end
 
-  defp topline_insight(metrics) do
-    delta = Map.get(metrics, :latest_delta, 0.0)
+  defp format_score(metrics) do
     score = Map.get(metrics, :latest_score, 0.0)
+    if score == 0.0, do: "—", else: "#{Float.round(score, 1)}"
+  end
+
+  defp format_delta_short(metrics) do
+    delta = Map.get(metrics, :latest_delta, 0.0)
 
     cond do
-      score == 0.0 ->
-        "No data available yet"
+      delta > 0.2 -> "+#{Float.round(delta, 2)}"
+      delta < -0.2 -> "#{Float.round(delta, 2)}"
+      true -> "±0"
+    end
+  end
 
-      delta > 0.2 ->
-        "Trending up #{format_delta(delta)} pts last round"
+  defp short_insight(metrics) do
+    delta = Map.get(metrics, :latest_delta, 0.0)
 
-      delta < -0.2 ->
-        "Down #{Float.round(abs(delta), 2)} pts — needs attention"
-
-      true ->
-        "Holding steady across recent rounds"
+    cond do
+      delta > 0.2 -> "Trending up"
+      delta < -0.2 -> "Needs attention"
+      true -> "Holding steady"
     end
   end
 
@@ -133,21 +145,16 @@ defmodule SurveyPulseWeb.DashboardLive do
     end
   end
 
-  defp format_delta(delta) when is_float(delta) and delta > 0, do: "+#{Float.round(delta, 2)}"
-  defp format_delta(delta) when is_float(delta) and delta < 0, do: "#{Float.round(delta, 2)}"
-  defp format_delta(delta) when is_float(delta), do: "#{Float.round(delta, 2)}"
-  defp format_delta(_), do: "—"
-
   defp sparkline_color(:brand_health), do: "#3b82f6"
   defp sparkline_color(:ad_testing), do: "#8b5cf6"
   defp sparkline_color(:concept_testing), do: "#f59e0b"
-  defp sparkline_color(:product_testing), do: "#10b981"
+  defp sparkline_color(:product_testing), do: "#06b6d4"
   defp sparkline_color(_), do: "#818cf8"
 
   defp category_color(:brand_health), do: "bg-blue-100 text-blue-700"
   defp category_color(:ad_testing), do: "bg-purple-100 text-purple-700"
   defp category_color(:concept_testing), do: "bg-amber-100 text-amber-700"
-  defp category_color(:product_testing), do: "bg-teal-100 text-teal-700"
+  defp category_color(:product_testing), do: "bg-cyan-100 text-cyan-700"
   defp category_color(_), do: "bg-gray-100 text-gray-700"
 
   defp format_category(:brand_health), do: "Brand Health"

@@ -541,7 +541,7 @@ defmodule SurveyPulseWeb.SurveyLive do
   defp category_color(:brand_health), do: "bg-blue-100 text-blue-700"
   defp category_color(:ad_testing), do: "bg-purple-100 text-purple-700"
   defp category_color(:concept_testing), do: "bg-amber-100 text-amber-700"
-  defp category_color(:product_testing), do: "bg-teal-100 text-teal-700"
+  defp category_color(:product_testing), do: "bg-cyan-100 text-cyan-700"
   defp category_color(_), do: "bg-gray-100 text-gray-700"
 
   defp load_available_filters(survey_id) do

@@ -27,8 +27,8 @@ const SparkLine = {
         datasets: [{
           data: scores,
           borderColor: color,
-          backgroundColor: color + "18",
-          borderWidth: 1.5,
+          backgroundColor: color + "33",
+          borderWidth: 2,
           pointRadius: 0,
           tension: 0.4,
           fill: true
