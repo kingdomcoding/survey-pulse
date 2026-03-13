@@ -110,9 +110,6 @@ defmodule SurveyPulseWeb.SurveyLive do
 
       <main class="max-w-7xl mx-auto px-6 py-8 space-y-6">
         <.key_insight insight={@insight} />
-        <.filter_bar filters={@filters} available_filters={@available_filters} />
-        <.active_filters filters={@filters} />
-        <.sample_warning total={total_filtered_responses(@trend_data)} />
 
         <div class="flex gap-2 overflow-x-auto pb-1">
           <button
@@ -285,6 +282,19 @@ defmodule SurveyPulseWeb.SurveyLive do
             </table>
           </div>
         </div>
+        <.sample_warning total={total_filtered_responses(@trend_data)} />
+
+        <details class={["group", if(any_filter_active?(@filters), do: "open", else: "")]}>
+          <summary class="flex items-center gap-2 cursor-pointer text-sm text-gray-500 hover:text-gray-700 transition-colors py-2">
+            <.icon name="hero-funnel" class="h-4 w-4" />
+            <span>Filter by demographics</span>
+            <.icon name="hero-chevron-right" class="h-3 w-3 transition-transform group-open:rotate-90" />
+          </summary>
+          <div class="pt-3 space-y-3">
+            <.filter_bar filters={@filters} available_filters={@available_filters} />
+            <.active_filters filters={@filters} />
+          </div>
+        </details>
       </main>
     </div>
     """
