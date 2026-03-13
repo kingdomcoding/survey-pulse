@@ -23,7 +23,8 @@ defmodule SurveyPulseWeb.SurveyLive do
        compare_question_id: nil,
        compare_trend_data: [],
        generating: false,
-       sample_pattern: "steady_growth"
+       sample_pattern: "steady_growth",
+       simulating: SurveyPulse.Ingestion.Simulator.running?(id)
      )}
   end
 
@@ -132,6 +133,29 @@ defmodule SurveyPulseWeb.SurveyLive do
   def handle_event("clear_filters", _params, socket) do
     query_params = %{"question" => socket.assigns.selected_question_id}
     {:noreply, push_patch(socket, to: ~p"/surveys/#{socket.assigns.survey.id}?#{query_params}")}
+  end
+
+  @impl true
+  def handle_event("start_simulation", _params, socket) do
+    survey = socket.assigns.survey
+    latest_wave = List.last(survey.waves)
+
+    if latest_wave do
+      SurveyPulse.Ingestion.Simulator.start(
+        survey_id: survey.id,
+        wave_id: latest_wave.id,
+        questions: survey.questions,
+        wave_num: latest_wave.wave_number
+      )
+    end
+
+    {:noreply, assign(socket, simulating: true)}
+  end
+
+  @impl true
+  def handle_event("stop_simulation", _params, socket) do
+    SurveyPulse.Ingestion.Simulator.stop(socket.assigns.survey.id)
+    {:noreply, assign(socket, simulating: false)}
   end
 
   @impl true
