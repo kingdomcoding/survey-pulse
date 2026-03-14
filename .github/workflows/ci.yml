@@ -88,7 +88,7 @@ jobs:
           GROUP BY survey_id, wave_id, question_id, age_group, gender, region"
 
       - name: Setup database
-        run: mix ecto.setup
+        run: mix ecto.create && mix ecto.migrate
 
       - name: Run tests
         run: mix test --include clickhouse
