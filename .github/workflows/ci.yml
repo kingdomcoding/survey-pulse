@@ -29,7 +29,7 @@ jobs:
           CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
         ports: ["8123:8123"]
         options: >-
-          --health-cmd "curl -sf http://localhost:8123/ping"
+          --health-cmd "clickhouse-client --password clickhouse --query 'SELECT 1'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
