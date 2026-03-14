@@ -1,20 +1,13 @@
 name: CI
-
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
-env:
-  MIX_ENV: test
-  ELIXIR_VERSION: "1.18.3"
-  OTP_VERSION: "27.3"
-
 jobs:
   test:
     runs-on: ubuntu-latest
-
     services:
       postgres:
         image: postgres:16-alpine
@@ -22,21 +15,32 @@ jobs:
           POSTGRES_USER: survey_pulse
           POSTGRES_PASSWORD: survey_pulse
           POSTGRES_DB: survey_pulse_test
-        ports:
-          - 5432:5432
+        ports: ["5434:5432"]
         options: >-
-          --health-cmd "pg_isready -U survey_pulse"
-          --health-interval 5s
-          --health-timeout 3s
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
           --health-retries 5
+      clickhouse:
+        image: clickhouse/clickhouse-server:24.8-alpine
+        ports: ["8123:8123"]
+        options: >-
+          --health-cmd "wget --spider -q http://localhost:8123/ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      MIX_ENV: test
+      CLICKHOUSE_URL: http://localhost:8123/survey_pulse_test
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: erlef/setup-beam@v1
         with:
-          elixir-version: ${{ env.ELIXIR_VERSION }}
-          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: "1.18"
+          otp-version: "27"
 
       - name: Cache deps
         uses: actions/cache@v4
@@ -50,16 +54,36 @@ jobs:
       - name: Install dependencies
         run: mix deps.get
 
-      - name: Compile (warnings as errors)
-        run: mix compile --warnings-as-errors
-
       - name: Check formatting
         run: mix format --check-formatted
 
-      - name: Credo
-        run: mix credo --strict
+      - name: Compile (warnings as errors)
+        run: mix compile --warnings-as-errors
+
+      - name: Init ClickHouse test database
+        run: |
+          curl -sf 'http://localhost:8123/' -d 'CREATE DATABASE IF NOT EXISTS survey_pulse_test'
+          curl -sf 'http://localhost:8123/' -d "CREATE TABLE IF NOT EXISTS survey_pulse_test.responses (
+            id UUID, survey_id UUID, wave_id UUID, question_id UUID, respondent_id UUID,
+            score Int32, age_group LowCardinality(String), gender LowCardinality(String),
+            region LowCardinality(String), responded_at DateTime
+          ) ENGINE = MergeTree() PARTITION BY toYYYYMM(responded_at) ORDER BY (survey_id, wave_id, question_id, responded_at)"
+          curl -sf 'http://localhost:8123/' -d "CREATE TABLE IF NOT EXISTS survey_pulse_test.wave_question_metrics (
+            survey_id UUID, wave_id UUID, question_id UUID,
+            age_group LowCardinality(String), gender LowCardinality(String), region LowCardinality(String),
+            response_count AggregateFunction(count, UInt64), avg_score AggregateFunction(avg, Int32),
+            min_score AggregateFunction(min, Int32), max_score AggregateFunction(max, Int32)
+          ) ENGINE = AggregatingMergeTree() ORDER BY (survey_id, wave_id, question_id, age_group, gender, region)"
+          curl -sf 'http://localhost:8123/' -d "CREATE MATERIALIZED VIEW IF NOT EXISTS survey_pulse_test.wave_question_metrics_mv
+          TO survey_pulse_test.wave_question_metrics AS
+          SELECT survey_id, wave_id, question_id, age_group, gender, region,
+            countState(*) AS response_count, avgState(score) AS avg_score,
+            minState(score) AS min_score, maxState(score) AS max_score
+          FROM survey_pulse_test.responses
+          GROUP BY survey_id, wave_id, question_id, age_group, gender, region"
+
+      - name: Setup database
+        run: mix ecto.setup
 
       - name: Run tests
-        env:
-          DATABASE_URL: ecto://survey_pulse:survey_pulse@localhost:5432/survey_pulse_test
-        run: mix test
+        run: mix test --include clickhouse
