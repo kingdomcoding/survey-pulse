@@ -50,7 +50,9 @@ defmodule SurveyPulseWeb.DashboardLive do
           <div class="flex items-center justify-between">
             <div>
               <h1 class="text-2xl font-semibold text-gray-900">SurveyPulse</h1>
-              <p class="text-sm text-gray-500 mt-0.5">Track how consumer perceptions change across survey rounds</p>
+              <p class="text-sm text-gray-500 mt-0.5">
+                Track how consumer perceptions change across survey rounds
+              </p>
             </div>
             <div class="flex items-center gap-4">
               <div class="flex items-center gap-4 text-sm">
@@ -59,15 +61,17 @@ defmodule SurveyPulseWeb.DashboardLive do
                 </span>
                 <span class="text-gray-300">·</span>
                 <span class="text-gray-500">
-                  <span class="font-semibold text-gray-900">{total_respondents(@survey_metrics)}</span> respondents
+                  <span class="font-semibold text-gray-900">
+                    {total_respondents(@survey_metrics)}
+                  </span>
+                  respondents
                 </span>
               </div>
               <button
                 phx-click={show_modal()}
                 class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
               >
-                <.icon name="hero-plus" class="h-4 w-4" />
-                New Survey
+                <.icon name="hero-plus" class="h-4 w-4" /> New Survey
               </button>
             </div>
           </div>
@@ -78,13 +82,14 @@ defmodule SurveyPulseWeb.DashboardLive do
         <div :if={@surveys == []} class="text-center py-16">
           <.icon name="hero-clipboard-document-list" class="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <h2 class="text-lg font-semibold text-gray-900 mb-1">No surveys yet</h2>
-          <p class="text-sm text-gray-500 mb-4">Create your first survey to start tracking consumer perceptions.</p>
+          <p class="text-sm text-gray-500 mb-4">
+            Create your first survey to start tracking consumer perceptions.
+          </p>
           <button
             phx-click={show_modal()}
             class="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
           >
-            <.icon name="hero-plus" class="h-4 w-4" />
-            Create Your First Survey
+            <.icon name="hero-plus" class="h-4 w-4" /> Create Your First Survey
           </button>
         </div>
         <div :if={@surveys != []} class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -106,7 +111,10 @@ defmodule SurveyPulseWeb.DashboardLive do
           <div class="h-full bg-white shadow-xl overflow-y-auto">
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
               <h2 class="text-lg font-semibold text-gray-900">Create Survey</h2>
-              <button phx-click={hide_modal()} class="text-gray-400 hover:text-gray-600 transition-colors">
+              <button
+                phx-click={hide_modal()}
+                class="text-gray-400 hover:text-gray-600 transition-colors"
+              >
                 <.icon name="hero-x-mark" class="h-5 w-5" />
               </button>
             </div>
@@ -338,13 +346,14 @@ defmodule SurveyPulseWeb.DashboardLive do
     """
 
     case SurveyPulse.ClickRepo.query(sql, %{
-      "survey_id" => survey_id,
-      "question_id" => question_id
-    }) do
+           "survey_id" => survey_id,
+           "question_id" => question_id
+         }) do
       {:ok, %{rows: rows}} ->
         Map.new(rows, fn [wid, avg, cnt] ->
           {Ecto.UUID.cast!(wid), %{avg: avg, count: cnt}}
         end)
+
       _ ->
         %{}
     end
@@ -362,9 +371,9 @@ defmodule SurveyPulseWeb.DashboardLive do
     """
 
     case SurveyPulse.ClickRepo.query(sql, %{
-      "survey_id" => survey_id,
-      "question_id" => question_id
-    }) do
+           "survey_id" => survey_id,
+           "question_id" => question_id
+         }) do
       {:ok, %{rows: rows}} ->
         Map.new(rows, fn [wid, score] -> {Ecto.UUID.cast!(wid), score} end)
 

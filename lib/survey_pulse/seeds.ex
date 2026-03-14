@@ -10,11 +10,41 @@ defmodule SurveyPulse.Seeds do
       category: :brand_health,
       pattern: :steady_growth,
       questions: [
-        %{code: "AWARENESS", text: "How aware are you of Fizzy Cola?", type: :likert, min: 1, max: 5},
-        %{code: "CONSIDER", text: "How likely are you to consider purchasing Fizzy Cola?", type: :likert, min: 1, max: 5},
-        %{code: "NPS", text: "How likely are you to recommend Fizzy Cola to a friend?", type: :nps, min: 0, max: 10},
-        %{code: "QUALITY", text: "How would you rate the overall quality of Fizzy Cola?", type: :likert, min: 1, max: 5},
-        %{code: "VALUE", text: "How would you rate the value for money of Fizzy Cola?", type: :likert, min: 1, max: 5}
+        %{
+          code: "AWARENESS",
+          text: "How aware are you of Fizzy Cola?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "CONSIDER",
+          text: "How likely are you to consider purchasing Fizzy Cola?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "NPS",
+          text: "How likely are you to recommend Fizzy Cola to a friend?",
+          type: :nps,
+          min: 0,
+          max: 10
+        },
+        %{
+          code: "QUALITY",
+          text: "How would you rate the overall quality of Fizzy Cola?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "VALUE",
+          text: "How would you rate the value for money of Fizzy Cola?",
+          type: :likert,
+          min: 1,
+          max: 5
+        }
       ],
       wave_count: 8,
       responses_per_wave: 1200
@@ -26,10 +56,34 @@ defmodule SurveyPulse.Seeds do
       category: :ad_testing,
       pattern: :campaign_spike,
       questions: [
-        %{code: "RECALL", text: "How memorable did you find this advertisement?", type: :likert, min: 1, max: 5},
-        %{code: "APPEAL", text: "How appealing did you find this advertisement?", type: :likert, min: 1, max: 5},
-        %{code: "INTENT", text: "After seeing this ad, how likely are you to purchase?", type: :likert, min: 1, max: 5},
-        %{code: "EMOTION", text: "How did this advertisement make you feel? (1=very negative, 5=very positive)", type: :scale, min: 1, max: 5}
+        %{
+          code: "RECALL",
+          text: "How memorable did you find this advertisement?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "APPEAL",
+          text: "How appealing did you find this advertisement?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "INTENT",
+          text: "After seeing this ad, how likely are you to purchase?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "EMOTION",
+          text: "How did this advertisement make you feel? (1=very negative, 5=very positive)",
+          type: :scale,
+          min: 1,
+          max: 5
+        }
       ],
       wave_count: 6,
       responses_per_wave: 800
@@ -41,11 +95,41 @@ defmodule SurveyPulse.Seeds do
       category: :concept_testing,
       pattern: :iteration_improvement,
       questions: [
-        %{code: "APPEAL", text: "How appealing is this product concept to you?", type: :likert, min: 1, max: 5},
-        %{code: "UNIQUE", text: "How unique or different is this concept compared to existing products?", type: :likert, min: 1, max: 5},
-        %{code: "INTENT", text: "How likely would you be to purchase this product?", type: :likert, min: 1, max: 5},
-        %{code: "PRICE", text: "How reasonable is the expected price for this product?", type: :likert, min: 1, max: 5},
-        %{code: "NPS", text: "How likely would you be to recommend this product?", type: :nps, min: 0, max: 10}
+        %{
+          code: "APPEAL",
+          text: "How appealing is this product concept to you?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "UNIQUE",
+          text: "How unique or different is this concept compared to existing products?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "INTENT",
+          text: "How likely would you be to purchase this product?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "PRICE",
+          text: "How reasonable is the expected price for this product?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "NPS",
+          text: "How likely would you be to recommend this product?",
+          type: :nps,
+          min: 0,
+          max: 10
+        }
       ],
       wave_count: 10,
       responses_per_wave: 600
@@ -57,9 +141,27 @@ defmodule SurveyPulse.Seeds do
       category: :brand_health,
       pattern: :steady_growth,
       questions: [
-        %{code: "AWARENESS", text: "How aware are you of FreshBrew Coffee?", type: :likert, min: 1, max: 5},
-        %{code: "QUALITY", text: "How would you rate the quality of FreshBrew Coffee?", type: :likert, min: 1, max: 5},
-        %{code: "NPS", text: "How likely are you to recommend FreshBrew Coffee?", type: :nps, min: 0, max: 10}
+        %{
+          code: "AWARENESS",
+          text: "How aware are you of FreshBrew Coffee?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "QUALITY",
+          text: "How would you rate the quality of FreshBrew Coffee?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "NPS",
+          text: "How likely are you to recommend FreshBrew Coffee?",
+          type: :nps,
+          min: 0,
+          max: 10
+        }
       ],
       wave_count: 6,
       responses_per_wave: 900
@@ -71,10 +173,34 @@ defmodule SurveyPulse.Seeds do
       category: :ad_testing,
       pattern: :campaign_spike,
       questions: [
-        %{code: "RECALL", text: "Do you remember seeing this advertisement?", type: :likert, min: 1, max: 5},
-        %{code: "BRNDLIFT", text: "After seeing this ad, how do you feel about the brand?", type: :likert, min: 1, max: 5},
-        %{code: "EMOTION", text: "How did this advertisement make you feel?", type: :scale, min: 1, max: 5},
-        %{code: "INTENT", text: "How likely are you to purchase after seeing this ad?", type: :likert, min: 1, max: 5}
+        %{
+          code: "RECALL",
+          text: "Do you remember seeing this advertisement?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "BRNDLIFT",
+          text: "After seeing this ad, how do you feel about the brand?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "EMOTION",
+          text: "How did this advertisement make you feel?",
+          type: :scale,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "INTENT",
+          text: "How likely are you to purchase after seeing this ad?",
+          type: :likert,
+          min: 1,
+          max: 5
+        }
       ],
       wave_count: 4,
       responses_per_wave: 1000
@@ -86,10 +212,34 @@ defmodule SurveyPulse.Seeds do
       category: :product_testing,
       pattern: :iteration_improvement,
       questions: [
-        %{code: "APPEAL", text: "How appealing is this packaging design?", type: :likert, min: 1, max: 5},
-        %{code: "SUSTAIN", text: "How environmentally friendly does this packaging appear?", type: :likert, min: 1, max: 5},
-        %{code: "PREF", text: "Would you prefer this packaging over the current design?", type: :likert, min: 1, max: 5},
-        %{code: "NPS", text: "How likely would you recommend products with this packaging?", type: :nps, min: 0, max: 10}
+        %{
+          code: "APPEAL",
+          text: "How appealing is this packaging design?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "SUSTAIN",
+          text: "How environmentally friendly does this packaging appear?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "PREF",
+          text: "Would you prefer this packaging over the current design?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "NPS",
+          text: "How likely would you recommend products with this packaging?",
+          type: :nps,
+          min: 0,
+          max: 10
+        }
       ],
       wave_count: 7,
       responses_per_wave: 500
@@ -101,10 +251,34 @@ defmodule SurveyPulse.Seeds do
       category: :concept_testing,
       pattern: :steady_growth,
       questions: [
-        %{code: "APPEAL", text: "How appealing is this product concept?", type: :likert, min: 1, max: 5},
-        %{code: "UNIQUE", text: "How unique is this compared to existing options?", type: :likert, min: 1, max: 5},
-        %{code: "INTENT", text: "How likely would you be to purchase?", type: :likert, min: 1, max: 5},
-        %{code: "NPS", text: "How likely would you recommend this product?", type: :nps, min: 0, max: 10}
+        %{
+          code: "APPEAL",
+          text: "How appealing is this product concept?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "UNIQUE",
+          text: "How unique is this compared to existing options?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "INTENT",
+          text: "How likely would you be to purchase?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "NPS",
+          text: "How likely would you recommend this product?",
+          type: :nps,
+          min: 0,
+          max: 10
+        }
       ],
       wave_count: 5,
       responses_per_wave: 700
@@ -116,10 +290,34 @@ defmodule SurveyPulse.Seeds do
       category: :brand_health,
       pattern: :campaign_spike,
       questions: [
-        %{code: "AWARENESS", text: "How familiar are you with GlowSkin Cosmetics?", type: :likert, min: 1, max: 5},
-        %{code: "TRUST", text: "How much do you trust GlowSkin as a brand?", type: :likert, min: 1, max: 5},
-        %{code: "LOYALTY", text: "How likely are you to continue buying GlowSkin?", type: :likert, min: 1, max: 5},
-        %{code: "NPS", text: "How likely are you to recommend GlowSkin?", type: :nps, min: 0, max: 10}
+        %{
+          code: "AWARENESS",
+          text: "How familiar are you with GlowSkin Cosmetics?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "TRUST",
+          text: "How much do you trust GlowSkin as a brand?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "LOYALTY",
+          text: "How likely are you to continue buying GlowSkin?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "NPS",
+          text: "How likely are you to recommend GlowSkin?",
+          type: :nps,
+          min: 0,
+          max: 10
+        }
       ],
       wave_count: 8,
       responses_per_wave: 800
@@ -131,9 +329,27 @@ defmodule SurveyPulse.Seeds do
       category: :ad_testing,
       pattern: :iteration_improvement,
       questions: [
-        %{code: "RECALL", text: "How memorable is this advertisement?", type: :likert, min: 1, max: 5},
-        %{code: "RELEVANCE", text: "How relevant is this ad to you personally?", type: :likert, min: 1, max: 5},
-        %{code: "INTENT", text: "How likely are you to click or learn more?", type: :likert, min: 1, max: 5}
+        %{
+          code: "RECALL",
+          text: "How memorable is this advertisement?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "RELEVANCE",
+          text: "How relevant is this ad to you personally?",
+          type: :likert,
+          min: 1,
+          max: 5
+        },
+        %{
+          code: "INTENT",
+          text: "How likely are you to click or learn more?",
+          type: :likert,
+          min: 1,
+          max: 5
+        }
       ],
       wave_count: 5,
       responses_per_wave: 600

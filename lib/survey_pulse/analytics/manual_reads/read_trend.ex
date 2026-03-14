@@ -88,13 +88,15 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
     case SurveyPulse.ClickRepo.query(sql, params) do
       {:ok, %{rows: rows}} ->
         Map.new(rows, fn [wid, promo, detract, n] ->
-          {Ecto.UUID.cast!(wid), %{
-            avg_score: Float.round(promo - detract, 1),
-            top2_box: promo,
-            bot2_box: detract,
-            response_count: n
-          }}
+          {Ecto.UUID.cast!(wid),
+           %{
+             avg_score: Float.round(promo - detract, 1),
+             top2_box: promo,
+             bot2_box: detract,
+             response_count: n
+           }}
         end)
+
       _ ->
         %{}
     end
@@ -112,8 +114,11 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
   defp normalize_uuids(map, keys) do
     Enum.reduce(keys, map, fn key, acc ->
       case Map.get(acc, key) do
-        val when is_binary(val) and byte_size(val) == 16 -> Map.put(acc, key, Ecto.UUID.cast!(val))
-        _ -> acc
+        val when is_binary(val) and byte_size(val) == 16 ->
+          Map.put(acc, key, Ecto.UUID.cast!(val))
+
+        _ ->
+          acc
       end
     end)
   end
@@ -162,7 +167,8 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
     case SurveyPulse.ClickRepo.query(sql, params) do
       {:ok, %{rows: rows}} ->
         Map.new(rows, fn [wid, t2b, b2b] ->
-          {Ecto.UUID.cast!(wid), %{top2_box: Float.round(t2b * 100, 1), bot2_box: Float.round(b2b * 100, 1)}}
+          {Ecto.UUID.cast!(wid),
+           %{top2_box: Float.round(t2b * 100, 1), bot2_box: Float.round(b2b * 100, 1)}}
         end)
 
       _ ->
@@ -247,6 +253,7 @@ defmodule SurveyPulse.Analytics.ManualReads.ReadTrend do
         Map.new(rows, fn [wid, var, n] ->
           {Ecto.UUID.cast!(wid), %{variance: var, n: n}}
         end)
+
       _ ->
         %{}
     end

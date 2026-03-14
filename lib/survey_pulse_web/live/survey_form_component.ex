@@ -117,7 +117,10 @@ defmodule SurveyPulseWeb.SurveyFormComponent do
               value={@name}
               class={[
                 "w-full rounded-lg border text-sm px-3 py-2 focus:ring-2 focus:ring-offset-0",
-                if(@errors[:name], do: "border-red-300 focus:ring-red-500", else: "border-gray-300 focus:ring-indigo-500")
+                if(@errors[:name],
+                  do: "border-red-300 focus:ring-red-500",
+                  else: "border-gray-300 focus:ring-indigo-500"
+                )
               ]}
               placeholder="e.g. Brand Health Tracker — Fizzy Cola"
               phx-debounce="300"
@@ -172,7 +175,10 @@ defmodule SurveyPulseWeb.SurveyFormComponent do
             </button>
           </div>
 
-          <div :for={{q, idx} <- Enum.with_index(@questions)} class="border border-gray-200 rounded-lg p-3 space-y-2">
+          <div
+            :for={{q, idx} <- Enum.with_index(@questions)}
+            class="border border-gray-200 rounded-lg p-3 space-y-2"
+          >
             <div class="flex items-center justify-between">
               <span class="text-xs font-medium text-gray-500">Question {idx + 1}</span>
               <button
@@ -186,7 +192,9 @@ defmodule SurveyPulseWeb.SurveyFormComponent do
                 <.icon name="hero-trash" class="h-3.5 w-3.5" />
               </button>
             </div>
-            <p :if={Enum.at(@question_errors, idx)} class="text-xs text-red-500">{Enum.at(@question_errors, idx)}</p>
+            <p :if={Enum.at(@question_errors, idx)} class="text-xs text-red-500">
+              {Enum.at(@question_errors, idx)}
+            </p>
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <input
@@ -203,7 +211,9 @@ defmodule SurveyPulseWeb.SurveyFormComponent do
                   name={"q_#{idx}_type"}
                   class="w-full rounded-lg border-gray-300 text-sm py-1.5 pl-2 pr-7"
                 >
-                  <option value="likert" selected={q["question_type"] == "likert"}>Likert (1–5)</option>
+                  <option value="likert" selected={q["question_type"] == "likert"}>
+                    Likert (1–5)
+                  </option>
                   <option value="nps" selected={q["question_type"] == "nps"}>NPS (0–10)</option>
                   <option value="scale" selected={q["question_type"] == "scale"}>Custom Scale</option>
                 </select>

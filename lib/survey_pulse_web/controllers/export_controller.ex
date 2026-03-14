@@ -3,7 +3,9 @@ defmodule SurveyPulseWeb.ExportController do
 
   def export(conn, %{"id" => survey_id} = params) do
     survey = SurveyPulse.Surveys.get_survey!(survey_id, load: [:questions])
-    question_id = params["question"] || (List.first(survey.questions) && List.first(survey.questions).id)
+
+    question_id =
+      params["question"] || (List.first(survey.questions) && List.first(survey.questions).id)
 
     filters = %{
       age_group: params["age_group"] || "all",
@@ -23,7 +25,17 @@ defmodule SurveyPulseWeb.ExportController do
     filename = "#{safe_name}_#{question && question.code}_export.csv"
 
     csv =
-      [["Round", "Responses", "Avg Score", "Top2 Box %", "Bottom2 Box %", "Delta", "Significant?"]]
+      [
+        [
+          "Round",
+          "Responses",
+          "Avg Score",
+          "Top2 Box %",
+          "Bottom2 Box %",
+          "Delta",
+          "Significant?"
+        ]
+      ]
       |> Enum.concat(
         Enum.map(trend_data, fn row ->
           [

@@ -175,7 +175,11 @@ defmodule SurveyPulseWeb.SurveyLive do
     {:noreply,
      socket
      |> put_flash(:info, "Generated 6 rounds of sample data")
-     |> assign(generating: false, survey: survey, available_filters: load_available_filters(survey.id))
+     |> assign(
+       generating: false,
+       survey: survey,
+       available_filters: load_available_filters(survey.id)
+     )
      |> push_patch(to: ~p"/surveys/#{survey.id}?question=#{first_question && first_question.id}")}
   end
 
@@ -225,12 +229,17 @@ defmodule SurveyPulseWeb.SurveyLive do
       </header>
 
       <main class="max-w-7xl mx-auto px-6 py-8 space-y-6 animate-in">
-        <div :if={@survey.waves == []} class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div
+          :if={@survey.waves == []}
+          class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+        >
           <div class="px-8 pt-10 pb-6 text-center">
             <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-50 mb-4">
               <.icon name="hero-chart-bar" class="h-8 w-8 text-indigo-400" />
             </div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-1">Ready to see this survey in action?</h3>
+            <h3 class="text-lg font-semibold text-gray-900 mb-1">
+              Ready to see this survey in action?
+            </h3>
             <p class="text-sm text-gray-500 max-w-sm mx-auto">
               Generate realistic sample data to explore trends, breakdowns, and round-by-round analysis.
             </p>
@@ -255,9 +264,25 @@ defmodule SurveyPulseWeb.SurveyLive do
                 <.icon name={icon} class="h-5 w-5 text-indigo-500 mb-2" />
                 <span class="block text-sm font-medium text-gray-900">{label}</span>
                 <span class="block text-xs text-gray-500 mt-0.5">{desc}</span>
-                <svg :if={@generating && @sample_pattern == pattern} class="absolute top-3 right-3 animate-spin h-4 w-4 text-indigo-500" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <svg
+                  :if={@generating && @sample_pattern == pattern}
+                  class="absolute top-3 right-3 animate-spin h-4 w-4 text-indigo-500"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                    fill="none"
+                  />
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
                 </svg>
               </button>
             </div>
@@ -294,7 +319,10 @@ defmodule SurveyPulseWeb.SurveyLive do
           </div>
         </div>
 
-        <div :if={@survey.waves != []} class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div
+          :if={@survey.waves != []}
+          class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm"
+        >
           <div class="flex items-start justify-between mb-6">
             <div>
               <h2 class="text-lg font-semibold text-gray-900 mb-1">Score Over Time</h2>
@@ -303,7 +331,10 @@ defmodule SurveyPulseWeb.SurveyLive do
               </p>
             </div>
             <div class="flex items-center gap-2">
-              <form :if={comparable_questions(@survey.questions, @selected_question_id) != []} phx-change="toggle_compare">
+              <form
+                :if={comparable_questions(@survey.questions, @selected_question_id) != []}
+                phx-change="toggle_compare"
+              >
                 <select
                   name="question_id"
                   class={[
@@ -336,11 +367,15 @@ defmodule SurveyPulseWeb.SurveyLive do
                   "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
                   if(@simulating,
                     do: "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100",
-                    else: "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                    else:
+                      "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
                   )
                 ]}
               >
-                <span class={["inline-block w-2 h-2 rounded-full", if(@simulating, do: "bg-red-500 animate-pulse", else: "bg-emerald-500")]} />
+                <span class={[
+                  "inline-block w-2 h-2 rounded-full",
+                  if(@simulating, do: "bg-red-500 animate-pulse", else: "bg-emerald-500")
+                ]} />
                 {if @simulating, do: "Stop Simulation", else: "Simulate Live Data"}
               </button>
             </div>
@@ -348,9 +383,14 @@ defmodule SurveyPulseWeb.SurveyLive do
           <%= if @trend_data == [] do %>
             <div class="h-80 flex items-center justify-center">
               <div class="text-center">
-                <.icon name={if any_filter_active?(@filters), do: "hero-funnel", else: "hero-chart-bar"} class="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <.icon
+                  name={if any_filter_active?(@filters), do: "hero-funnel", else: "hero-chart-bar"}
+                  class="h-12 w-12 text-gray-300 mx-auto mb-3"
+                />
                 <p class="text-sm font-medium text-gray-900 mb-1">
-                  {if any_filter_active?(@filters), do: "No results match these filters", else: "No data available for this question"}
+                  {if any_filter_active?(@filters),
+                    do: "No results match these filters",
+                    else: "No data available for this question"}
                 </p>
                 <p :if={any_filter_active?(@filters)} class="text-xs text-gray-500 mb-3">
                   This combination has no responses in this question.
@@ -368,8 +408,7 @@ defmodule SurveyPulseWeb.SurveyLive do
             <div class="flex items-center gap-5 mb-4 text-xs text-gray-500">
               <div class="flex items-center gap-1.5">
                 <span class="inline-block w-6 h-0.5 bg-indigo-500 rounded"></span>
-                <span class="inline-flex w-2 h-2 rounded-full bg-indigo-500"></span>
-                Score trend
+                <span class="inline-flex w-2 h-2 rounded-full bg-indigo-500"></span> Score trend
               </div>
               <div class="flex items-center gap-1.5">
                 <span class="inline-flex w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm">
@@ -386,9 +425,17 @@ defmodule SurveyPulseWeb.SurveyLive do
               id="trend-chart"
               phx-hook="TrendChart"
               data-trend={Jason.encode!(trend_data_for_chart(@trend_data))}
-              data-compare={if @compare_trend_data != [], do: Jason.encode!(trend_data_for_chart(@compare_trend_data)), else: ""}
-              data-primary-label={selected_question(@survey.questions, @selected_question_id) |> then(& &1 && &1.code)}
-              data-compare-label={selected_question(@survey.questions, @compare_question_id) |> then(& &1 && &1.code)}
+              data-compare={
+                if @compare_trend_data != [],
+                  do: Jason.encode!(trend_data_for_chart(@compare_trend_data)),
+                  else: ""
+              }
+              data-primary-label={
+                selected_question(@survey.questions, @selected_question_id) |> then(&(&1 && &1.code))
+              }
+              data-compare-label={
+                selected_question(@survey.questions, @compare_question_id) |> then(&(&1 && &1.code))
+              }
               data-scale-min={scale_min(@survey.questions, @selected_question_id)}
               data-scale-max={scale_max(@survey.questions, @selected_question_id)}
               data-question-type={question_type(@survey.questions, @selected_question_id)}
@@ -397,7 +444,10 @@ defmodule SurveyPulseWeb.SurveyLive do
           <% end %>
         </div>
 
-        <div :if={@breakdown_data != []} class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div
+          :if={@breakdown_data != []}
+          class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm"
+        >
           <div class="flex items-center justify-between mb-5">
             <h2 class="text-lg font-semibold text-gray-900">Demographic Breakdown</h2>
             <div class="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
@@ -420,22 +470,37 @@ defmodule SurveyPulseWeb.SurveyLive do
           <div
             id="breakdown-chart"
             phx-hook="BreakdownChart"
-            data-breakdown={Jason.encode!(Enum.map(@breakdown_data, fn b -> %{segment: b.segment, avg_score: b.avg_score, response_count: b.response_count, top2_box: b.top2_box} end))}
+            data-breakdown={
+              Jason.encode!(
+                Enum.map(@breakdown_data, fn b ->
+                  %{
+                    segment: b.segment,
+                    avg_score: b.avg_score,
+                    response_count: b.response_count,
+                    top2_box: b.top2_box
+                  }
+                end)
+              )
+            }
             class="h-80"
           />
         </div>
 
-        <div :if={@survey.waves != []} class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div
+          :if={@survey.waves != []}
+          class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+        >
           <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
             <h2 class="text-lg font-semibold text-gray-900">Round-by-Round Detail</h2>
             <div class="flex items-center gap-3">
               <a
-                href={~p"/surveys/#{@survey.id}/export?#{export_params(@selected_question_id, @filters)}"}
+                href={
+                  ~p"/surveys/#{@survey.id}/export?#{export_params(@selected_question_id, @filters)}"
+                }
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 download
               >
-                <.icon name="hero-arrow-down-tray" class="h-3.5 w-3.5" />
-                CSV
+                <.icon name="hero-arrow-down-tray" class="h-3.5 w-3.5" /> CSV
               </a>
               <.filter_bar filters={@filters} available_filters={@available_filters} />
             </div>
@@ -454,15 +519,18 @@ defmodule SurveyPulseWeb.SurveyLive do
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {if question_type(@survey.questions, @selected_question_id) == :nps,
-                      do: "NPS Score", else: "Avg Score"}
+                      do: "NPS Score",
+                      else: "Avg Score"}
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {if question_type(@survey.questions, @selected_question_id) == :nps,
-                      do: "Promoters", else: "Positive %"}
+                      do: "Promoters",
+                      else: "Positive %"}
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {if question_type(@survey.questions, @selected_question_id) == :nps,
-                      do: "Detractors", else: "Negative %"}
+                      do: "Detractors",
+                      else: "Negative %"}
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Change
@@ -590,7 +658,10 @@ defmodule SurveyPulseWeb.SurveyLive do
 
   defp active_filters(assigns) do
     ~H"""
-    <div :if={any_filter_active?(@filters)} class="flex items-center gap-2 flex-wrap px-6 py-2 bg-indigo-50 border-b border-indigo-100">
+    <div
+      :if={any_filter_active?(@filters)}
+      class="flex items-center gap-2 flex-wrap px-6 py-2 bg-indigo-50 border-b border-indigo-100"
+    >
       <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Filtered by:</span>
       <span
         :if={@filters.age_group != "all"}
@@ -631,10 +702,13 @@ defmodule SurveyPulseWeb.SurveyLive do
 
   defp key_insight(assigns) do
     ~H"""
-    <div :if={@insight} class={[
-      "flex items-start gap-3 px-5 py-4 rounded-xl border",
-      insight_style(@insight.type)
-    ]}>
+    <div
+      :if={@insight}
+      class={[
+        "flex items-start gap-3 px-5 py-4 rounded-xl border",
+        insight_style(@insight.type)
+      ]}
+    >
       <.icon name={insight_icon(@insight.type)} class="h-5 w-5 mt-0.5 shrink-0" />
       <div>
         <p class="text-sm font-semibold">{@insight.headline}</p>
@@ -663,28 +737,32 @@ defmodule SurveyPulseWeb.SurveyLive do
         %{
           type: :neutral,
           headline: "First round collected",
-          detail: "#{format_number(latest.response_count)} responses recorded. Future rounds will be compared against this baseline."
+          detail:
+            "#{format_number(latest.response_count)} responses recorded. Future rounds will be compared against this baseline."
         }
 
       latest.significant? and latest.delta > 0 ->
         %{
           type: :positive,
           headline: "#{question.text} improved significantly",
-          detail: "Up #{format_delta(latest.delta)} points from the previous round (#{format_number(latest.response_count)} responses, statistically significant)."
+          detail:
+            "Up #{format_delta(latest.delta)} points from the previous round (#{format_number(latest.response_count)} responses, statistically significant)."
         }
 
       latest.significant? and latest.delta < 0 ->
         %{
           type: :negative,
           headline: "#{question.text} declined significantly",
-          detail: "Down #{format_delta(abs(latest.delta))} points from the previous round (#{format_number(latest.response_count)} responses, statistically significant)."
+          detail:
+            "Down #{format_delta(abs(latest.delta))} points from the previous round (#{format_number(latest.response_count)} responses, statistically significant)."
         }
 
       true ->
         %{
           type: :neutral,
           headline: "No significant change detected",
-          detail: "Score moved #{format_delta(latest.delta)} points — within normal variation (#{format_number(latest.response_count)} responses)."
+          detail:
+            "Score moved #{format_delta(latest.delta)} points — within normal variation (#{format_number(latest.response_count)} responses)."
         }
     end
   end
@@ -747,7 +825,10 @@ defmodule SurveyPulseWeb.SurveyLive do
 
   defp scale_label(nil), do: ""
   defp scale_label(%{question_type: :nps}), do: "NPS · −100 to +100"
-  defp scale_label(%{question_type: :likert, scale_min: mn, scale_max: mx}), do: "Likert · #{mn}–#{mx}"
+
+  defp scale_label(%{question_type: :likert, scale_min: mn, scale_max: mx}),
+    do: "Likert · #{mn}–#{mx}"
+
   defp scale_label(%{scale_min: mn, scale_max: mx}), do: "Scale · #{mn}–#{mx}"
 
   defp scale_badge_color(nil), do: "bg-gray-100 text-gray-500"

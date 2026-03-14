@@ -55,7 +55,12 @@ defmodule SurveyPulseWeb.CoreComponents do
       :if={msg = render_slot(@inner_block) || Phoenix.Flash.get(@flash, @kind)}
       id={@id}
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
-      phx-mounted={@kind == :info && JS.transition({"opacity-100", "opacity-100", "opacity-0"}, time: 3000) |> hide("##{@id}") |> JS.push("lv:clear-flash", value: %{key: @kind})}
+      phx-mounted={
+        @kind == :info &&
+          JS.transition({"opacity-100", "opacity-100", "opacity-0"}, time: 3000)
+          |> hide("##{@id}")
+          |> JS.push("lv:clear-flash", value: %{key: @kind})
+      }
       role="alert"
       class={[
         "fixed top-4 left-1/2 -translate-x-1/2 z-50 w-auto max-w-md",
@@ -67,7 +72,11 @@ defmodule SurveyPulseWeb.CoreComponents do
       {@rest}
     >
       <.icon :if={@kind == :info} name="hero-check-circle" class="size-5 shrink-0 text-emerald-500" />
-      <.icon :if={@kind == :error} name="hero-exclamation-circle" class="size-5 shrink-0 text-red-500" />
+      <.icon
+        :if={@kind == :error}
+        name="hero-exclamation-circle"
+        class="size-5 shrink-0 text-red-500"
+      />
       <div>
         <p :if={@title} class="font-semibold">{@title}</p>
         <p>{msg}</p>
