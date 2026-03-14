@@ -23,6 +23,10 @@ jobs:
           --health-retries 5
       clickhouse:
         image: clickhouse/clickhouse-server:24.8
+        env:
+          CLICKHOUSE_USER: default
+          CLICKHOUSE_PASSWORD: clickhouse
+          CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
         ports: ["8123:8123"]
         options: >-
           --health-cmd "curl -sf http://localhost:8123/ping"
@@ -33,7 +37,7 @@ jobs:
 
     env:
       MIX_ENV: test
-      CLICKHOUSE_URL: http://localhost:8123/survey_pulse_test
+      CLICKHOUSE_URL: http://default:clickhouse@localhost:8123/survey_pulse_test
 
     steps:
       - uses: actions/checkout@v4
@@ -63,19 +67,19 @@ jobs:
 
       - name: Init ClickHouse test database
         run: |
-          curl -sf 'http://localhost:8123/' -d 'CREATE DATABASE IF NOT EXISTS survey_pulse_test'
-          curl -sf 'http://localhost:8123/' -d "CREATE TABLE IF NOT EXISTS survey_pulse_test.responses (
+          curl -sf 'http://default:clickhouse@localhost:8123/' -d 'CREATE DATABASE IF NOT EXISTS survey_pulse_test'
+          curl -sf 'http://default:clickhouse@localhost:8123/' -d "CREATE TABLE IF NOT EXISTS survey_pulse_test.responses (
             id UUID, survey_id UUID, wave_id UUID, question_id UUID, respondent_id UUID,
             score Int32, age_group LowCardinality(String), gender LowCardinality(String),
             region LowCardinality(String), responded_at DateTime
           ) ENGINE = MergeTree() PARTITION BY toYYYYMM(responded_at) ORDER BY (survey_id, wave_id, question_id, responded_at)"
-          curl -sf 'http://localhost:8123/' -d "CREATE TABLE IF NOT EXISTS survey_pulse_test.wave_question_metrics (
+          curl -sf 'http://default:clickhouse@localhost:8123/' -d "CREATE TABLE IF NOT EXISTS survey_pulse_test.wave_question_metrics (
             survey_id UUID, wave_id UUID, question_id UUID,
             age_group LowCardinality(String), gender LowCardinality(String), region LowCardinality(String),
             response_count AggregateFunction(count, UInt64), avg_score AggregateFunction(avg, Int32),
             min_score AggregateFunction(min, Int32), max_score AggregateFunction(max, Int32)
           ) ENGINE = AggregatingMergeTree() ORDER BY (survey_id, wave_id, question_id, age_group, gender, region)"
-          curl -sf 'http://localhost:8123/' -d "CREATE MATERIALIZED VIEW IF NOT EXISTS survey_pulse_test.wave_question_metrics_mv
+          curl -sf 'http://default:clickhouse@localhost:8123/' -d "CREATE MATERIALIZED VIEW IF NOT EXISTS survey_pulse_test.wave_question_metrics_mv
           TO survey_pulse_test.wave_question_metrics AS
           SELECT survey_id, wave_id, question_id, age_group, gender, region,
             countState(*) AS response_count, avgState(score) AS avg_score,
