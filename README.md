@@ -1,52 +1,80 @@
+[![CI](https://github.com/kingdomcoding/survey-pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/kingdomcoding/survey-pulse/actions/workflows/ci.yml)
+
 # SurveyPulse
 
-A production-grade survey analytics dashboard built with Elixir, Ash Framework, Phoenix LiveView, and ClickHouse. Demonstrates longitudinal (wave-over-wave) trend analysis with real-time updates and demographic filtering.
-
-## Quick Start
-
-```bash
-docker compose up
-```
-
-Visit [http://localhost:4600](http://localhost:4600) — the dashboard loads with pre-seeded data showing 3 surveys, ~97K responses, and visible trend patterns.
+A dual-database survey analytics dashboard built with Elixir, Phoenix LiveView, ClickHouse, and PostgreSQL. Demonstrates the architecture patterns used in longitudinal survey analytics — turning large-scale response data into actionable insights across survey waves.
 
 ## Architecture
 
 ```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  LiveView    │────▶│  Ash Domain  │────▶│ PostgreSQL  │
-│  Dashboard   │     │  (Surveys)   │     │  (OLTP)     │
-└─────────────┘     └──────────────┘     └─────────────┘
-       │
-       │            ┌──────────────┐     ┌─────────────┐
-       └───────────▶│  Ash Domain  │────▶│ ClickHouse  │
-                    │  (Analytics) │     │  (OLAP)     │
-                    └──────────────┘     └─────────────┘
-                           ▲
-                    ┌──────┴───────┐
-                    │   Broadway   │
-                    │  (Ingestion) │
-                    └──────────────┘
+                ┌─────────────────────────────────────────────────────┐
+                │                  Phoenix LiveView                   │
+                │  DashboardLive ── SurveyLive ── SurveyFormComponent │
+                │       │               │                             │
+                │    SparkLine      TrendChart + BreakdownChart       │
+                │   (Chart.js)       (Chart.js hooks)                 │
+                └─────────┬───────────────┬───────────────────────────┘
+                          │               │
+              ┌───────────▼───────────────▼──────────┐
+              │         Ash Framework Domains         │
+              │  Surveys (CRUD)    Analytics (reads)  │
+              └────────┬──────────────────┬───────────┘
+                       │                  │
+            ┌──────────▼────┐    ┌────────▼──────────┐
+            │  PostgreSQL   │    │    ClickHouse      │
+            │  surveys      │    │  responses         │
+            │  questions    │    │  wave_question_     │
+            │  waves        │    │    metrics (AggMT)  │
+            └───────────────┘    │  materialized view  │
+                                 └─────────────────────┘
+                                         ▲
+                                         │
+              ┌──────────────────────────┤
+              │     Broadway Pipeline    │
+              │  validate → batch → insert
+              └──────────▲───────────────┘
+                         │
+              Pipeline.ingest/1 (push-based)
 ```
 
-### Why Two Databases?
+## Key Technical Decisions
 
-- **PostgreSQL**: Stores survey metadata (surveys, waves, questions). Managed by Ash + AshPostgres with migrations, relationships, and aggregates.
-- **ClickHouse**: Stores individual responses (~97K rows). Uses MergeTree for raw data and AggregatingMergeTree materialized views for pre-computed metrics. Queries return in milliseconds.
+- **Dual-database architecture**: PostgreSQL for application state (surveys, questions, waves via Ash/Ecto), ClickHouse for analytics at scale. OLTP and OLAP workloads have fundamentally different access patterns — mixing them in one database forces compromise on both.
 
-### Why Ash Framework?
+- **AggregatingMergeTree with materialized views**: Pre-aggregates response metrics on insert using `countState()`/`avgState()`. Reads use `countMerge()`/`avgMerge()` for sub-second analytics regardless of response volume. No background jobs, no cron — the materialized view keeps aggregations current automatically.
 
-Ash provides a declarative resource layer that keeps domain logic organized:
-- Code interfaces at the domain level (`SurveyPulse.Surveys.list_surveys!()`)
-- Custom actions with embedded query logic (no scattered context modules)
-- ManualRead pattern for ClickHouse integration within the Ash ecosystem
+- **Broadway for ingestion**: Back-pressure, automatic batching (5K rows), concurrent validation (4 processors), fault tolerance via supervision. All data — seed generation and live simulation — flows through the Broadway pipeline. Responses go through validation → batching → ClickHouse insert → PubSub broadcast.
 
-### Why Broadway?
+- **Ash Framework with ManualRead**: Ash resources serve as typed interfaces over raw ClickHouse SQL, preserving Ash's action system while bypassing Ecto for OLAP queries. Domain boundaries: `Surveys` (CRUD) and `Analytics` (read-only).
 
-The ingestion pipeline uses Broadway with a DummyProducer pattern — external sources push messages in via `Pipeline.ingest/1`. This demonstrates:
-- Batch processing (5K rows per ClickHouse insert)
-- Concurrent processors with validation
-- Production-ready message acknowledgment
+- **LiveView over React**: Real-time PubSub-driven chart updates with no API layer, no client state management, no WebSocket boilerplate. Chart.js hooks handle rendering; LiveView handles data flow.
+
+## Features
+
+- **Dashboard**: Survey cards with top-line KPIs, sparkline trend charts, live update indicator
+- **Survey Deep-Dive**: Wave-over-wave trend chart with significance markers, question comparison overlay, demographic breakdown with inline score labels
+- **Demographic Filtering**: Filter by age group, gender, region — all queries parameterized and pushed to ClickHouse
+- **Live Ingestion Simulation**: Click "Simulate Live Data" to watch Broadway ingest responses in real-time, with charts updating via PubSub
+- **Statistical Testing**: Z-test significance annotations on wave-over-wave changes, NPS computation (promoters vs detractors), top-2-box / bottom-2-box percentages
+- **CSV Export**: Download filtered trend data for offline analysis
+
+## Running Locally
+
+```bash
+docker compose up -d --build
+```
+
+App runs at http://localhost:4600. Seeds 9 surveys with 120K+ simulated responses automatically on first boot.
+
+## Running Tests
+
+```bash
+# Unit tests (no ClickHouse required)
+mix test
+
+# Full test suite including ClickHouse integration
+mix test --include clickhouse
+```
 
 ## Tech Stack
 
@@ -58,53 +86,12 @@ The ingestion pipeline uses Broadway with a DummyProducer pattern — external s
 | OLTP Database | PostgreSQL 16 |
 | OLAP Database | ClickHouse 24.8 |
 | Ingestion | Broadway |
-| Charts | Chart.js |
+| Charts | Chart.js + chartjs-plugin-datalabels |
 | CSS | Tailwind v4 |
-| HTTP Server | Bandit |
 
-## Features
+## What I'd Build Next
 
-- **Dashboard** (`/`): Survey cards with top-line KPIs (response count, avg score, trend delta), live update indicator
-- **Survey Deep-Dive** (`/surveys/:id`): Wave-over-wave trend chart, question selector tabs, demographic filters (age, gender, region), wave detail table with significance annotations
-- **Real-time**: PubSub broadcasts on new data trigger LiveView re-renders
-- **Seed Data**: 3 surveys with realistic patterns — gradual improvement trend with a visible dip at waves 4-5 (simulating campaign fatigue)
-
-## Development
-
-```bash
-# Start databases
-docker compose up -d postgres clickhouse
-
-# Install and setup
-mix setup
-
-# Run dev server
-mix phx.server
-
-# Run tests
-mix test
-
-# Quality checks
-mix compile --warnings-as-errors
-mix format --check-formatted
-mix credo --strict
-```
-
-## API
-
-### Ingest Responses
-
-```bash
-curl -X POST http://localhost:4600/api/ingest \
-  -H "Content-Type: application/json" \
-  -d '{"responses": [{"survey_id": "...", "wave_id": "...", "question_id": "...", "respondent_id": "...", "score": 4, "age_group": "25-34", "gender": "female", "region": "europe"}]}'
-```
-
-## What I'd Do Next
-
-- **Authentication**: Add user auth with AshAuthentication
-- **CSV Export**: Download filtered trend data
-- **Alerting**: Notify on statistically significant score drops
-- **A/B Comparison**: Side-by-side wave comparison view
-- **ETS Caching**: Cache ClickHouse aggregations with TTL for dashboard performance
-- **OpenTelemetry**: Full distributed tracing (instrumentation hooks are in place)
+- **OpenTelemetry tracing** on ClickHouse queries and Broadway stages for production observability
+- **Kubernetes deployment** with horizontal pod autoscaling based on Broadway queue depth
+- **Query result caching** with ETS + TTL for expensive aggregations that don't change mid-wave
+- **Alerting on significant trend shifts** — push notifications when z-test detects a statistically significant change
