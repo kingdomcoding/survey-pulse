@@ -135,6 +135,11 @@ defmodule SurveyPulseWeb.SurveyLive do
   end
 
   @impl true
+  def handle_event("toggle_feed", _params, socket) do
+    {:noreply, assign(socket, feed_expanded: !socket.assigns.feed_expanded)}
+  end
+
+  @impl true
   def handle_event("clear_filters", _params, socket) do
     query_params = %{"question" => socket.assigns.selected_question_id}
     {:noreply, push_patch(socket, to: ~p"/surveys/#{socket.assigns.survey.id}?#{query_params}")}
@@ -193,6 +198,37 @@ defmodule SurveyPulseWeb.SurveyLive do
        available_filters: load_available_filters(survey.id)
      )
      |> push_patch(to: ~p"/surveys/#{survey.id}?question=#{first_question && first_question.id}")}
+  end
+
+  @impl true
+  def handle_info({:simulation_batch, responses}, socket) do
+    questions = socket.assigns.survey.questions
+    question_map = Map.new(questions, &{&1.id, &1})
+
+    enriched =
+      Enum.map(responses, fn r ->
+        q = Map.get(question_map, r.question_id)
+
+        %{
+          score: r.score,
+          age_group: r.age_group,
+          gender: r.gender,
+          region: r.region,
+          question_code: q && q.code,
+          question_type: q && q.question_type,
+          scale_max: q && q.scale_max
+        }
+      end)
+
+    recent =
+      (enriched ++ socket.assigns.recent_responses)
+      |> Enum.take(50)
+
+    {:noreply,
+     assign(socket,
+       sim_count: socket.assigns.sim_count + length(responses),
+       recent_responses: recent
+     )}
   end
 
   @impl true
