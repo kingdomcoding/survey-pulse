@@ -428,6 +428,74 @@ defmodule SurveyPulseWeb.SurveyLive do
               </button>
             </div>
           </div>
+          <div
+            :if={@sim_count > 0}
+            class="flex items-center gap-4 px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-200 mb-4"
+          >
+            <div class="flex items-center gap-2">
+              <span class={[
+                "inline-block w-2 h-2 rounded-full",
+                if(@simulating, do: "bg-emerald-500 animate-pulse", else: "bg-gray-400")
+              ]} />
+              <span class="text-sm font-semibold text-gray-900 tabular-nums">
+                {format_number(@sim_count)}
+              </span>
+              <span class="text-xs text-gray-500">responses ingested</span>
+            </div>
+            <div :if={@sim_started_at} class="text-xs text-gray-400 tabular-nums">
+              {format_rate(@sim_count, @sim_started_at)}/sec
+            </div>
+            <div :if={@sim_started_at} class="text-xs text-gray-400 tabular-nums">
+              {format_elapsed(@sim_started_at)}
+            </div>
+            <div class="flex-1" />
+            <button
+              :if={@recent_responses != []}
+              phx-click="toggle_feed"
+              class="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+            >
+              {if @feed_expanded, do: "Hide feed ↑", else: "Show feed ↓"}
+            </button>
+          </div>
+          <div
+            :if={@feed_expanded and @recent_responses != []}
+            class="mb-4 rounded-lg border border-gray-200 overflow-hidden"
+          >
+            <div class="px-3 py-2 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+              <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Live Response Feed
+              </span>
+              <span class="text-xs text-gray-400">{length(@recent_responses)} most recent</span>
+            </div>
+            <div
+              class="max-h-48 overflow-y-auto divide-y divide-gray-100"
+              id="response-feed"
+              phx-hook="ResponseFeed"
+            >
+              <div
+                :for={r <- @recent_responses}
+                class="flex items-center gap-3 px-3 py-1.5 text-xs hover:bg-gray-50 transition-colors animate-in"
+              >
+                <span class="font-mono text-gray-400 w-8 shrink-0">{r.question_code}</span>
+                <.score_indicator
+                  score={r.score}
+                  scale_max={r.scale_max}
+                  question_type={r.question_type}
+                />
+                <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">
+                    {r.age_group}
+                  </span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-medium">
+                    {format_gender_short(r.gender)}
+                  </span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-medium truncate">
+                    {format_region_short(r.region)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
           <%= if @trend_data == [] do %>
             <div class="h-80 flex items-center justify-center">
               <div class="text-center">
