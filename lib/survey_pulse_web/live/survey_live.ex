@@ -981,6 +981,60 @@ defmodule SurveyPulseWeb.SurveyLive do
     ]
   end
 
+  defp score_indicator(assigns) do
+    ~H"""
+    <span class={[
+      "inline-flex items-center justify-center w-7 h-5 rounded text-xs font-bold tabular-nums",
+      score_color(@score, @scale_max, @question_type)
+    ]}>
+      {@score}
+    </span>
+    """
+  end
+
+  defp score_color(score, _scale_max, :nps) do
+    cond do
+      score >= 9 -> "bg-emerald-100 text-emerald-700"
+      score >= 7 -> "bg-gray-100 text-gray-600"
+      true -> "bg-red-100 text-red-700"
+    end
+  end
+
+  defp score_color(score, scale_max, _type) do
+    ratio = if scale_max && scale_max > 0, do: score / scale_max, else: 0.5
+
+    cond do
+      ratio >= 0.8 -> "bg-emerald-100 text-emerald-700"
+      ratio >= 0.6 -> "bg-blue-100 text-blue-700"
+      ratio >= 0.4 -> "bg-gray-100 text-gray-600"
+      ratio >= 0.2 -> "bg-amber-100 text-amber-700"
+      true -> "bg-red-100 text-red-700"
+    end
+  end
+
+  defp format_gender_short("non_binary"), do: "NB"
+  defp format_gender_short("female"), do: "F"
+  defp format_gender_short("male"), do: "M"
+  defp format_gender_short(g), do: g
+
+  defp format_region_short("north_america"), do: "NA"
+  defp format_region_short("asia_pacific"), do: "APAC"
+  defp format_region_short("latin_america"), do: "LATAM"
+  defp format_region_short("europe"), do: "EU"
+  defp format_region_short(r), do: r
+
+  defp format_rate(count, started_at) do
+    elapsed = DateTime.diff(DateTime.utc_now(), started_at, :second)
+    if elapsed > 0, do: "~#{Float.round(count / elapsed, 1)}", else: "—"
+  end
+
+  defp format_elapsed(started_at) do
+    seconds = DateTime.diff(DateTime.utc_now(), started_at, :second)
+    minutes = div(seconds, 60)
+    secs = rem(seconds, 60)
+    "#{minutes}:#{String.pad_leading("#{secs}", 2, "0")}"
+  end
+
   defp format_dimension(:age_group), do: "Age"
   defp format_dimension(:gender), do: "Gender"
   defp format_dimension(:region), do: "Region"
