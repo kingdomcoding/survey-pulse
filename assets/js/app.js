@@ -27,12 +27,13 @@ import topbar from "../vendor/topbar"
 import TrendChart from "./hooks/chart_hook"
 import SparkLine from "./hooks/spark_hook"
 import BreakdownChart from "./hooks/breakdown_hook"
+import ResponseFeed from "./hooks/response_feed_hook"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, TrendChart, SparkLine, BreakdownChart},
+  hooks: {...colocatedHooks, TrendChart, SparkLine, BreakdownChart, ResponseFeed},
 })
 
 // Show progress bar on live navigation and form submits
