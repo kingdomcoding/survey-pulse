@@ -5,6 +5,7 @@ defmodule SurveyPulseWeb.SurveyLive do
   def mount(%{"id" => id}, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(SurveyPulse.PubSub, "analytics:updates")
+      Phoenix.PubSub.subscribe(SurveyPulse.PubSub, "simulation:#{id}")
     end
 
     survey = SurveyPulse.Surveys.get_survey!(id, load: [:questions, :waves])
@@ -24,7 +25,11 @@ defmodule SurveyPulseWeb.SurveyLive do
        compare_trend_data: [],
        generating: false,
        sample_pattern: "steady_growth",
-       simulating: SurveyPulse.Ingestion.Simulator.running?(id)
+       simulating: SurveyPulse.Ingestion.Simulator.running?(id),
+       sim_count: 0,
+       sim_started_at: nil,
+       recent_responses: [],
+       feed_expanded: true
      )}
   end
 
@@ -149,7 +154,14 @@ defmodule SurveyPulseWeb.SurveyLive do
       )
     end
 
-    {:noreply, assign(socket, simulating: true)}
+    {:noreply,
+     assign(socket,
+       simulating: true,
+       sim_count: 0,
+       sim_started_at: DateTime.utc_now(),
+       recent_responses: [],
+       feed_expanded: true
+     )}
   end
 
   @impl true
