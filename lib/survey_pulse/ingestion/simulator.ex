@@ -41,6 +41,13 @@ defmodule SurveyPulse.Ingestion.Simulator do
   @impl true
   def handle_info(:tick, state) do
     responses = generate_batch(state)
+
+    Phoenix.PubSub.broadcast(
+      SurveyPulse.PubSub,
+      "simulation:#{state.survey_id}",
+      {:simulation_batch, responses}
+    )
+
     Pipeline.ingest(responses)
     Process.send_after(self(), :tick, state.interval_ms)
     {:noreply, state}
